@@ -14,6 +14,139 @@ namespace JosephM.Xrm.CalculatedFields.Plugins.Test
     public class CalculatedFieldsTests : CalculatedXrmTest
     {
         [TestMethod]
+        public void CalculatedFieldsRollupFirstTests()
+        {
+            //these also need refreshing when the order field changed so have specific test for them
+            DeleteAllCalculatedFields();
+
+            var firstRollup = CreateTestRecord(Entities.jmcg_calculatedfield, new Dictionary<string, object>
+                {
+                    { Fields.jmcg_calculatedfield_.jmcg_type, new OptionSetValue(OptionSets.CalculatedField.Type.Rollup) },
+                    { Fields.jmcg_calculatedfield_.jmcg_rolluptype, new OptionSetValue(OptionSets.CalculatedField.RollupType.First) },
+                    { Fields.jmcg_calculatedfield_.jmcg_name, "Testing First Orders" },
+                    { Fields.jmcg_calculatedfield_.jmcg_entitytype, Entities.jmcg_testentity },
+                    { Fields.jmcg_calculatedfield_.jmcg_field, Fields.jmcg_testentity_.jmcg_firsttarget },
+                    { Fields.jmcg_calculatedfield_.jmcg_entitytyperolledup, Entities.jmcg_testentitytwo },
+                    { Fields.jmcg_calculatedfield_.jmcg_fieldrolledup, Fields.jmcg_testentitytwo_.jmcg_firstsource},
+                    { Fields.jmcg_calculatedfield_.jmcg_fieldreferencing, Fields.jmcg_testentitytwo_.jmcg_testentityrollupreference },
+                    { Fields.jmcg_calculatedfield_.jmcg_separatortype, new OptionSetValue(OptionSets.CalculatedField.SeparatorType.Comma) },
+                    { Fields.jmcg_calculatedfield_.jmcg_rollupfilter,  "<filter type=\"and\"><condition attribute=\"statecode\" operator=\"eq\" value=\"0\" /><condition attribute=\"new_boolean\" operator=\"eq\" value=\"1\" /></filter>" },
+                    { Fields.jmcg_calculatedfield_.jmcg_orderrollupbyfield, Fields.jmcg_testentitytwo_.new_date },
+                    { Fields.jmcg_calculatedfield_.jmcg_orderrollupbyfieldordertype, new OptionSetValue(OptionSets.CalculatedField.OrderRollupByFieldOrderType.Ascending) }
+                });
+
+            var firstRollupLookup = CreateTestRecord(Entities.jmcg_calculatedfield, new Dictionary<string, object>
+                {
+                    { Fields.jmcg_calculatedfield_.jmcg_type, new OptionSetValue(OptionSets.CalculatedField.Type.Rollup) },
+                    { Fields.jmcg_calculatedfield_.jmcg_rolluptype, new OptionSetValue(OptionSets.CalculatedField.RollupType.First) },
+                    { Fields.jmcg_calculatedfield_.jmcg_name, "Testing First Orders" },
+                    { Fields.jmcg_calculatedfield_.jmcg_entitytype, Entities.jmcg_testentity },
+                    { Fields.jmcg_calculatedfield_.jmcg_field, Fields.jmcg_testentity_.jmcg_firsttargettestentitytwo },
+                    { Fields.jmcg_calculatedfield_.jmcg_entitytyperolledup, Entities.jmcg_testentitytwo },
+                    { Fields.jmcg_calculatedfield_.jmcg_fieldrolledup, Fields.jmcg_testentitytwo_.jmcg_testentitytwoid},
+                    { Fields.jmcg_calculatedfield_.jmcg_fieldreferencing, Fields.jmcg_testentitytwo_.jmcg_testentityrollupreference },
+                    { Fields.jmcg_calculatedfield_.jmcg_separatortype, new OptionSetValue(OptionSets.CalculatedField.SeparatorType.Comma) },
+                    { Fields.jmcg_calculatedfield_.jmcg_rollupfilter,  "<filter type=\"and\"><condition attribute=\"statecode\" operator=\"eq\" value=\"0\" /><condition attribute=\"new_boolean\" operator=\"eq\" value=\"1\" /></filter>" },
+                    { Fields.jmcg_calculatedfield_.jmcg_orderrollupbyfield, Fields.jmcg_testentitytwo_.new_date },
+                    { Fields.jmcg_calculatedfield_.jmcg_orderrollupbyfieldordertype, new OptionSetValue(OptionSets.CalculatedField.OrderRollupByFieldOrderType.Ascending) }
+                });
+
+            var target = CreateTestRecord(Entities.jmcg_testentity);
+
+            //create one matching and verify populated
+            var source1 = CreateTestRecord(Entities.jmcg_testentitytwo, new Dictionary<string, object>
+            {
+                { Fields.jmcg_testentitytwo_.jmcg_name, "Testing Order" },
+                { Fields.jmcg_testentitytwo_.jmcg_testentityrollupreference, target.ToEntityReference() },
+                { Fields.jmcg_testentitytwo_.new_boolean, true },
+                { Fields.jmcg_testentitytwo_.new_date, LocalisationService.TodayUnspecifiedType },
+                { Fields.jmcg_testentitytwo_.jmcg_firstsource,  50 },
+            });
+            target = Refresh(target);
+            Assert.AreEqual(50, target.GetInt(Fields.jmcg_testentity_.jmcg_firsttarget));
+            Assert.AreEqual(source1.Id, target.GetLookupGuid(Fields.jmcg_testentity_.jmcg_firsttargettestentitytwo));
+
+            //create one with earlier date and verify populated
+            var source2 = CreateTestRecord(Entities.jmcg_testentitytwo, new Dictionary<string, object>
+            {
+                { Fields.jmcg_testentitytwo_.jmcg_name, "Testing Order" },
+                { Fields.jmcg_testentitytwo_.jmcg_testentityrollupreference, target.ToEntityReference() },
+                { Fields.jmcg_testentitytwo_.new_boolean, true },
+                { Fields.jmcg_testentitytwo_.new_date, LocalisationService.TodayUnspecifiedType.AddDays(-1) },
+                { Fields.jmcg_testentitytwo_.jmcg_firstsource,  100 },
+            });
+            target = Refresh(target);
+            Assert.AreEqual(100, target.GetInt(Fields.jmcg_testentity_.jmcg_firsttarget));
+            Assert.AreEqual(source2.Id, target.GetLookupGuid(Fields.jmcg_testentity_.jmcg_firsttargettestentitytwo));
+
+            //set other date earlier and verify updated
+            source1.SetField(Fields.jmcg_testentitytwo_.new_date, LocalisationService.TodayUnspecifiedType.AddDays(-2));
+            source1 = UpdateFieldsAndRetreive(source1, Fields.jmcg_testentitytwo_.new_date);
+            target = Refresh(target);
+            Assert.AreEqual(50, target.GetInt(Fields.jmcg_testentity_.jmcg_firsttarget));
+            Assert.AreEqual(source1.Id, target.GetLookupGuid(Fields.jmcg_testentity_.jmcg_firsttargettestentitytwo));
+
+            //unmatch and verify updated
+            source1.SetField(Fields.jmcg_testentitytwo_.new_boolean, false);
+            source1 = UpdateFieldsAndRetreive(source1, Fields.jmcg_testentitytwo_.new_boolean);
+            target = Refresh(target);
+            Assert.AreEqual(100, target.GetInt(Fields.jmcg_testentity_.jmcg_firsttarget));
+            Assert.AreEqual(source2.Id, target.GetLookupGuid(Fields.jmcg_testentity_.jmcg_firsttargettestentitytwo));
+
+            //rematch and verify updated
+            source1.SetField(Fields.jmcg_testentitytwo_.new_boolean, true);
+            source1 = UpdateFieldsAndRetreive(source1, Fields.jmcg_testentitytwo_.new_boolean);
+            target = Refresh(target);
+            Assert.AreEqual(50, target.GetInt(Fields.jmcg_testentity_.jmcg_firsttarget));
+            Assert.AreEqual(source1.Id, target.GetLookupGuid(Fields.jmcg_testentity_.jmcg_firsttargettestentitytwo));
+
+            //delete and verify updated
+            XrmService.Delete(source1);
+            target = Refresh(target);
+            Assert.AreEqual(100, target.GetInt(Fields.jmcg_testentity_.jmcg_firsttarget));
+            Assert.AreEqual(source2.Id, target.GetLookupGuid(Fields.jmcg_testentity_.jmcg_firsttargettestentitytwo));
+
+            //change to descending order
+            firstRollup.SetOptionSetField(Fields.jmcg_calculatedfield_.jmcg_orderrollupbyfieldordertype, OptionSets.CalculatedField.OrderRollupByFieldOrderType.Descending);
+            firstRollup = UpdateFieldsAndRetreive(firstRollup, Fields.jmcg_calculatedfield_.jmcg_orderrollupbyfieldordertype);
+            firstRollupLookup.SetOptionSetField(Fields.jmcg_calculatedfield_.jmcg_orderrollupbyfieldordertype, OptionSets.CalculatedField.OrderRollupByFieldOrderType.Descending);
+            firstRollupLookup = UpdateFieldsAndRetreive(firstRollupLookup, Fields.jmcg_calculatedfield_.jmcg_orderrollupbyfieldordertype);
+
+            source1 = CreateTestRecord(Entities.jmcg_testentitytwo, new Dictionary<string, object>
+            {
+                { Fields.jmcg_testentitytwo_.jmcg_name, "Testing Order" },
+                { Fields.jmcg_testentitytwo_.jmcg_testentityrollupreference, target.ToEntityReference() },
+                { Fields.jmcg_testentitytwo_.new_boolean, true },
+                { Fields.jmcg_testentitytwo_.new_date, LocalisationService.TodayUnspecifiedType },
+                { Fields.jmcg_testentitytwo_.jmcg_firstsource,  50 },
+            });
+            target = Refresh(target);
+            Assert.AreEqual(50, target.GetInt(Fields.jmcg_testentity_.jmcg_firsttarget));
+            Assert.AreEqual(source1.Id, target.GetLookupGuid(Fields.jmcg_testentity_.jmcg_firsttargettestentitytwo));
+
+            //change amount and verify updated
+            source1.SetField(Fields.jmcg_testentitytwo_.jmcg_firstsource, 75);
+            source1 = UpdateFieldsAndRetreive(source1, Fields.jmcg_testentitytwo_.jmcg_firstsource);
+            target = Refresh(target);
+            Assert.AreEqual(75, target.GetInt(Fields.jmcg_testentity_.jmcg_firsttarget));
+            Assert.AreEqual(source1.Id, target.GetLookupGuid(Fields.jmcg_testentity_.jmcg_firsttargettestentitytwo));
+
+            //set other date later and verify updated
+            source2.SetField(Fields.jmcg_testentitytwo_.new_date, LocalisationService.TodayUnspecifiedType.AddDays(2));
+            source2 = UpdateFieldsAndRetreive(source2, Fields.jmcg_testentitytwo_.new_date);
+            target = Refresh(target);
+            Assert.AreEqual(100, target.GetInt(Fields.jmcg_testentity_.jmcg_firsttarget));
+            Assert.AreEqual(source2.Id, target.GetLookupGuid(Fields.jmcg_testentity_.jmcg_firsttargettestentitytwo));
+
+            //change amount on not matched and verify not updated
+            source1.SetField(Fields.jmcg_testentitytwo_.jmcg_firstsource, 25);
+            source1 = UpdateFieldsAndRetreive(source1, Fields.jmcg_testentitytwo_.jmcg_firstsource);
+            target = Refresh(target);
+            Assert.AreEqual(100, target.GetInt(Fields.jmcg_testentity_.jmcg_firsttarget));
+            Assert.AreEqual(source2.Id, target.GetLookupGuid(Fields.jmcg_testentity_.jmcg_firsttargettestentitytwo));
+        }
+
+        [TestMethod]
         public void CalculatedFieldsRollupRecalculateAllTest()
         {
             DeleteAllCalculatedFields();
@@ -118,6 +251,12 @@ namespace JosephM.Xrm.CalculatedFields.Plugins.Test
                         convertValue = money2.Value;
                     }
                 }
+                else if (config.RollupType == RollupType.First)
+                {
+                    Assert.IsTrue(XrmEntity.FieldsEqual(config.ValueRollup1, testEntityTarget1.GetField(config.FieldTo)));
+                    Assert.IsNull(testEntityTarget2.GetField(config.FieldTo));
+                    Assert.IsNull(testEntityTarget3.GetField(config.FieldTo));
+                }
             }
         }
 
@@ -167,6 +306,10 @@ namespace JosephM.Xrm.CalculatedFields.Plugins.Test
                     }
                     Assert.AreEqual(0, Convert.ToInt32(convertValue));
                 }
+                else if (config.RollupType == RollupType.First)
+                {
+                    Assert.IsNull(testEntityTarget1.GetField(config.FieldTo));
+                }
             }
 
             //create a rollup record and verify rollup calculated
@@ -207,6 +350,10 @@ namespace JosephM.Xrm.CalculatedFields.Plugins.Test
                     Assert.IsTrue(XrmEntity.FieldsEqual(config.ValueRollup1, testEntityTarget1.GetField(config.FieldTo)));
                 }
                 else if (config.RollupType == RollupType.Sum)
+                {
+                    Assert.IsTrue(XrmEntity.FieldsEqual(config.ValueRollup1, testEntityTarget1.GetField(config.FieldTo)));
+                }
+                else if (config.RollupType == RollupType.First)
                 {
                     Assert.IsTrue(XrmEntity.FieldsEqual(config.ValueRollup1, testEntityTarget1.GetField(config.FieldTo)));
                 }
@@ -253,6 +400,10 @@ namespace JosephM.Xrm.CalculatedFields.Plugins.Test
                 {
                     Assert.IsTrue(XrmEntity.FieldsEqual(XrmEntity.SumFields(new[] { config.ValueRollup1, config.ValueRollup2 }), testEntityTarget1.GetField(config.FieldTo)));
                 }
+                else if (config.RollupType == RollupType.First)
+                {
+                    Assert.IsTrue(XrmEntity.FieldsEqual(config.ValueRollup1, testEntityTarget1.GetField(config.FieldTo)));
+                }
             }
 
             //create a second target record, switch one of the rollups to it and verify
@@ -297,6 +448,11 @@ namespace JosephM.Xrm.CalculatedFields.Plugins.Test
                     Assert.IsTrue(XrmEntity.FieldsEqual(config.ValueRollup2, testEntityTarget2.GetField(config.FieldTo)));
                 }
                 else if (config.RollupType == RollupType.Sum)
+                {
+                    Assert.IsTrue(XrmEntity.FieldsEqual(config.ValueRollup1, testEntityTarget1.GetField(config.FieldTo)));
+                    Assert.IsTrue(XrmEntity.FieldsEqual(config.ValueRollup2, testEntityTarget2.GetField(config.FieldTo)));
+                }
+                else if (config.RollupType == RollupType.First)
                 {
                     Assert.IsTrue(XrmEntity.FieldsEqual(config.ValueRollup1, testEntityTarget1.GetField(config.FieldTo)));
                     Assert.IsTrue(XrmEntity.FieldsEqual(config.ValueRollup2, testEntityTarget2.GetField(config.FieldTo)));
@@ -351,6 +507,11 @@ namespace JosephM.Xrm.CalculatedFields.Plugins.Test
                     }
                     Assert.AreEqual(0, Convert.ToInt32(convertValue));
                 }
+                else if (config.RollupType == RollupType.First)
+                {
+                    Assert.IsTrue(XrmEntity.FieldsEqual(config.ValueRollup1, testEntityTarget1.GetField(config.FieldTo)));
+                    Assert.IsNull(testEntityTarget2.GetField(config.FieldTo));
+                }
             }
 
             //reactivate and verify rolled up
@@ -393,6 +554,11 @@ namespace JosephM.Xrm.CalculatedFields.Plugins.Test
                     Assert.IsTrue(XrmEntity.FieldsEqual(config.ValueRollup2, testEntityTarget2.GetField(config.FieldTo)));
                 }
                 else if (config.RollupType == RollupType.Sum)
+                {
+                    Assert.IsTrue(XrmEntity.FieldsEqual(config.ValueRollup1, testEntityTarget1.GetField(config.FieldTo)));
+                    Assert.IsTrue(XrmEntity.FieldsEqual(config.ValueRollup2, testEntityTarget2.GetField(config.FieldTo)));
+                }
+                else if (config.RollupType == RollupType.First)
                 {
                     Assert.IsTrue(XrmEntity.FieldsEqual(config.ValueRollup1, testEntityTarget1.GetField(config.FieldTo)));
                     Assert.IsTrue(XrmEntity.FieldsEqual(config.ValueRollup2, testEntityTarget2.GetField(config.FieldTo)));
@@ -452,6 +618,11 @@ namespace JosephM.Xrm.CalculatedFields.Plugins.Test
                     }
                     Assert.AreEqual(0, Convert.ToInt32(convertValue));
                 }
+                else if (config.RollupType == RollupType.First)
+                {
+                    Assert.IsTrue(XrmEntity.FieldsEqual(config.ValueRollup1, testEntityTarget1.GetField(config.FieldTo)));
+                    Assert.IsNull(testEntityTarget2.GetField(config.FieldTo));
+                }
             }
 
             //rematch filter and change value and verify rolled up
@@ -498,6 +669,11 @@ namespace JosephM.Xrm.CalculatedFields.Plugins.Test
                     Assert.IsTrue(XrmEntity.FieldsEqual(config.ValueRollup2, testEntityTarget2.GetField(config.FieldTo)));
                 }
                 else if (config.RollupType == RollupType.Sum)
+                {
+                    Assert.IsTrue(XrmEntity.FieldsEqual(config.ValueRollup1, testEntityTarget1.GetField(config.FieldTo)));
+                    Assert.IsTrue(XrmEntity.FieldsEqual(config.ValueRollup2, testEntityTarget2.GetField(config.FieldTo)));
+                }
+                else if (config.RollupType == RollupType.First)
                 {
                     Assert.IsTrue(XrmEntity.FieldsEqual(config.ValueRollup1, testEntityTarget1.GetField(config.FieldTo)));
                     Assert.IsTrue(XrmEntity.FieldsEqual(config.ValueRollup2, testEntityTarget2.GetField(config.FieldTo)));
@@ -557,6 +733,11 @@ namespace JosephM.Xrm.CalculatedFields.Plugins.Test
                     }
                     Assert.AreEqual(0, Convert.ToInt32(convertValue));
                 }
+                else if (config.RollupType == RollupType.SeparatedStrings)
+                {
+                    Assert.IsTrue(XrmEntity.FieldsEqual(config.ValueRollup1, testEntityTarget1.GetField(config.FieldTo)));
+                    Assert.IsNull(testEntityTarget2.GetField(config.FieldTo));
+                }
             }
 
             //relink and unmatch value
@@ -608,6 +789,11 @@ namespace JosephM.Xrm.CalculatedFields.Plugins.Test
                         convertValue = money.Value;
                     }
                     Assert.AreEqual(0, Convert.ToInt32(convertValue));
+                }
+                else if (config.RollupType == RollupType.First)
+                {
+                    Assert.IsTrue(XrmEntity.FieldsEqual(config.ValueRollup1, testEntityTarget1.GetField(config.FieldTo)));
+                    Assert.IsNull(testEntityTarget2.GetField(config.FieldTo));
                 }
             }
             //relink, match & change value
@@ -664,6 +850,11 @@ namespace JosephM.Xrm.CalculatedFields.Plugins.Test
                     }
                     Assert.AreEqual(0, Convert.ToInt32(convertValue));
                 }
+                else if (config.RollupType == RollupType.First)
+                {
+                    Assert.IsTrue(XrmEntity.FieldsEqual(config.ValueRollup1, testEntityTarget1.GetField(config.FieldTo)));
+                    Assert.IsNull(testEntityTarget2.GetField(config.FieldTo));
+                }
             }
 
             //deactivate and verify removed
@@ -699,6 +890,10 @@ namespace JosephM.Xrm.CalculatedFields.Plugins.Test
                 {
                     Assert.IsTrue(XrmEntity.FieldsEqual(config.ValueRollup1, testEntityTarget1.GetField(config.FieldTo)));
                 }
+                else if (config.RollupType == RollupType.First)
+                {
+                    Assert.IsTrue(XrmEntity.FieldsEqual(config.ValueRollup1, testEntityTarget1.GetField(config.FieldTo)));
+                }
             }
 
             //delete already deactivated and verify no change
@@ -731,6 +926,10 @@ namespace JosephM.Xrm.CalculatedFields.Plugins.Test
                     Assert.IsTrue(XrmEntity.FieldsEqual(config.ValueRollup1, testEntityTarget1.GetField(config.FieldTo)));
                 }
                 else if (config.RollupType == RollupType.Sum)
+                {
+                    Assert.IsTrue(XrmEntity.FieldsEqual(config.ValueRollup1, testEntityTarget1.GetField(config.FieldTo)));
+                }
+                else if (config.RollupType == RollupType.First)
                 {
                     Assert.IsTrue(XrmEntity.FieldsEqual(config.ValueRollup1, testEntityTarget1.GetField(config.FieldTo)));
                 }
@@ -773,6 +972,10 @@ namespace JosephM.Xrm.CalculatedFields.Plugins.Test
                         convertValue = money.Value;
                     }
                     Assert.AreEqual(0, Convert.ToInt32(convertValue));
+                }
+                else if (config.RollupType == RollupType.First)
+                {
+                    Assert.IsNull(testEntityTarget1.GetField(config.FieldTo));
                 }
             }
         }
@@ -987,7 +1190,7 @@ namespace JosephM.Xrm.CalculatedFields.Plugins.Test
             return new TestRollupsConfig(typeRolledUpTo, typeRolledUp, typeRolledUpReferenceField, filterXml, new[]
              {
                 new TestRollupsConfig.TestRollupConfig(RollupType.Sum, Fields.jmcg_testentity_.jmcg_integersumtarget, Fields.jmcg_testentitytwo_.jmcg_integersumsource, 2, 7),
-                new TestRollupsConfig.TestRollupConfig(RollupType.Sum, Fields.jmcg_testentity_.jmcg_decimalsumtarget, Fields.jmcg_testentitytwo_.jmcg_decimalsumsource, (decimal)2.2, (decimal)7.7),
+                new TestRollupsConfig.TestRollupConfig(RollupType.Sum, Fields.jmcg_testentity_.jmcg_decimalsumtarget, Fields.jmcg_testentitytwo_.jmcg_decimalsumsource, (decimal)2222.2, (decimal)7777.7),
                 new TestRollupsConfig.TestRollupConfig(RollupType.Sum, Fields.jmcg_testentity_.jmcg_doublesumtarget, Fields.jmcg_testentitytwo_.jmcg_doublesumsource, (double)2.222, (double)7.777),
                 new TestRollupsConfig.TestRollupConfig(RollupType.Sum, Fields.jmcg_testentity_.jmcg_moneysumtarget, Fields.jmcg_testentitytwo_.jmcg_moneysumsource, new Money((decimal)2.22), new Money((decimal)7.77)),
                 new TestRollupsConfig.TestRollupConfig(RollupType.Min, Fields.jmcg_testentity_.jmcg_integermintarget, Fields.jmcg_testentitytwo_.jmcg_integerminsource, 2, 7),
@@ -1003,6 +1206,7 @@ namespace JosephM.Xrm.CalculatedFields.Plugins.Test
                 new TestRollupsConfig.TestRollupConfig(RollupType.Exists, Fields.jmcg_testentity_.jmcg_existstarget, Fields.jmcg_testentitytwo_.jmcg_name, "Testing 1", "Testing 2"),
                 new TestRollupsConfig.TestRollupConfig(RollupType.Count, Fields.jmcg_testentity_.jmcg_counttarget, Fields.jmcg_testentitytwo_.jmcg_name, "Testing 1", "Testing 2"),
                 new TestRollupsConfig.TestRollupConfig(RollupType.SeparatedStrings, Fields.jmcg_testentity_.jmcg_separatedstringtarget, Fields.jmcg_testentitytwo_.jmcg_separatedstringsource, "WTF", "WTS"),
+                new TestRollupsConfig.TestRollupConfig(RollupType.First, Fields.jmcg_testentity_.jmcg_firsttarget, Fields.jmcg_testentitytwo_.jmcg_firstsource, 10, 20),
             });
         }
 
@@ -1024,7 +1228,8 @@ namespace JosephM.Xrm.CalculatedFields.Plugins.Test
                     { Fields.jmcg_calculatedfield_.jmcg_fieldrolledup, config.FieldFrom },
                     { Fields.jmcg_calculatedfield_.jmcg_fieldreferencing, configs.TypeRolledUpReferenceField },
                     { Fields.jmcg_calculatedfield_.jmcg_separatortype, new OptionSetValue(OptionSets.CalculatedField.SeparatorType.Comma) },
-                    { Fields.jmcg_calculatedfield_.jmcg_rollupfilter, configs.FilterXml }
+                    { Fields.jmcg_calculatedfield_.jmcg_rollupfilter, configs.FilterXml },
+                    { Fields.jmcg_calculatedfield_.jmcg_orderrollupbyfieldordertype, new OptionSetValue(OptionSets.CalculatedField.OrderRollupByFieldOrderType.Ascending) }
                 }));
             }
             return results;

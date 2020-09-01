@@ -375,7 +375,9 @@ namespace JosephM.Xrm.CalculatedFields.Plugins.Services
                 (RollupType)e.GetOptionSetValue(Fields.jmcg_calculatedfield_.jmcg_rolluptype),
                 e.GetStringField(Fields.jmcg_calculatedfield_.jmcg_fieldreferencing),
                 FieldTypeOptionToClrTytpe(e.GetOptionSetValue(Fields.jmcg_calculatedfield_.jmcg_fieldtype)),
-                GetSeparatorString(e));
+                GetSeparatorString(e),
+                e.GetStringField(Fields.jmcg_calculatedfield_.jmcg_orderrollupbyfield),
+                OrderTypeOptionToSdkType(e.GetOptionSetValue(Fields.jmcg_calculatedfield_.jmcg_orderrollupbyfieldordertype)));
             rollup.Filter = config.FilterExpression;
             rollup.FilterXml = e.GetStringField(Fields.jmcg_calculatedfield_.jmcg_rollupfilter);
             return rollup;
@@ -451,6 +453,25 @@ namespace JosephM.Xrm.CalculatedFields.Plugins.Services
             return config;
         }
 
+        private OrderType OrderTypeOptionToSdkType(int optionValue)
+        {
+            switch (optionValue)
+            {
+                case OptionSets.CalculatedField.OrderRollupByFieldOrderType.Ascending:
+                    {
+                        return OrderType.Ascending;
+                    }
+                case OptionSets.CalculatedField.OrderRollupByFieldOrderType.Descending:
+                    {
+                        return OrderType.Descending;
+                    }
+                default:
+                    {
+                        throw new InvalidPluginExecutionException($"Order Type not implemented for option value {optionValue}");
+                    }
+            }
+        }
+
         private Type FieldTypeOptionToClrTytpe(int optionValue)
         {
             switch (optionValue)
@@ -475,9 +496,17 @@ namespace JosephM.Xrm.CalculatedFields.Plugins.Services
                     {
                         return typeof(int);
                     }
+                case OptionSets.CalculatedField.FieldType.Lookup:
+                    {
+                        return typeof(EntityReference);
+                    }
                 case OptionSets.CalculatedField.FieldType.Money:
                     {
                         return typeof(Money);
+                    }
+                case OptionSets.CalculatedField.FieldType.Picklist:
+                    {
+                        return typeof(OptionSetValue);
                     }
                 case OptionSets.CalculatedField.FieldType.String:
                     {

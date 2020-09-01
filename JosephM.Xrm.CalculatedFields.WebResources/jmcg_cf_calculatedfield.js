@@ -4,12 +4,13 @@
 CalculatedJs = new Object();
 CalculatedJs.options = {
     Type: {
-        Concatenate: 1,
-        Rollup: 2
+        Concatenate: 0,
+        Rollup: 1
     },
     RollupType: {
-        Count: 1,
-        Exists: 2,
+        Count: 0,
+        Exists: 1,
+        First: 2,
         Max: 3,
         Mean: 4,
         Min: 5,
@@ -34,6 +35,7 @@ CalculatedJs.RunOnLoad = function () {
     CalculatedJs.AddFieldSelectionPicklist(null, "jmcg_entitytype", "jmcg_fieldselectionfield", "jmcg_field", ["String", "Integer", "Money", "Decimal", "Double", "Boolean", "Memo"]);
     CalculatedJs.AddFieldSelectionPicklist(CalculatedJs.options.Type.Rollup, "jmcg_entitytyperolledup", "jmcg_fieldreferencingselectionfield", "jmcg_fieldreferencing",["Lookup", "Customer", "Owner"]);
     CalculatedJs.AddFieldSelectionPicklist(CalculatedJs.options.Type.Rollup, "jmcg_entitytyperolledup", "jmcg_fieldrolledupselectionfield", "jmcg_fieldrolledup", ["String", "Integer", "Money", "Decimal", "Double", "Boolean", "UniqueIdentifier", "Lookup", "Memo"]);
+    CalculatedJs.AddFieldSelectionPicklist(CalculatedJs.options.Type.Rollup, "jmcg_entitytyperolledup", "jmcg_orderrollupbyfieldselectionfield", "jmcg_orderrollupbyfield", null);
     CalculatedJs.AddFieldSelectionPicklist(CalculatedJs.options.Type.Concatenate, "jmcg_entitytype", "jmcg_concatenatefield1selectionfield", "jmcg_concatenatefield1", null);
     CalculatedJs.AddFieldSelectionPicklist(CalculatedJs.options.Type.Concatenate, "jmcg_entitytype", "jmcg_concatenatefield2selectionfield", "jmcg_concatenatefield2", null);
     CalculatedJs.AddFieldSelectionPicklist(CalculatedJs.options.Type.Concatenate, "jmcg_entitytype", "jmcg_concatenatefield3selectionfield", "jmcg_concatenatefield3", null);
@@ -95,6 +97,13 @@ CalculatedJs.RefreshVisibility = function () {
     var isOtherSeparator = calculatedPageUtility.GetFieldValue("jmcg_separatortype") == CalculatedJs.options.SeparatorType.OtherString;
     calculatedPageUtility.SetFieldVisibility("jmcg_separatorstring", separatorInContext && isOtherSeparator);
     calculatedPageUtility.SetFieldMandatory("jmcg_separatorstring", separatorInContext && isOtherSeparator);
+    var rollupFirst = isRollup && rollupType == CalculatedJs.options.RollupType.First;
+    calculatedPageUtility.SetFieldVisibility("jmcg_orderrollupbyfieldselectionfield", rollupFirst);
+    calculatedPageUtility.SetFieldMandatory("jmcg_orderrollupbyfieldselectionfield", rollupFirst);
+    calculatedPageUtility.SetFieldVisibility("jmcg_orderrollupbyfield", rollupFirst);
+    calculatedPageUtility.SetFieldMandatory("jmcg_orderrollupbyfield", rollupFirst);
+    calculatedPageUtility.SetFieldVisibility("jmcg_orderrollupbyfieldordertype", rollupFirst);
+    calculatedPageUtility.SetFieldMandatory("jmcg_orderrollupbyfieldordertype", rollupFirst);
 };
 
 CalculatedJs.AddFieldSelectionPicklist = function (calculationType, entityField, fieldSelectionField, targetField, validTypes) {

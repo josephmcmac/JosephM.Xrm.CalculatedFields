@@ -63,6 +63,8 @@ namespace JosephM.Xrm.CalculatedFields.Plugins.Rollups
                             if (plugin.FieldChanging(rollup.LookupName)
                                 || (rollup.FieldRolledup != null && plugin.FieldChanging(rollup.FieldRolledup)))
                                 isDependencyChanging = true;
+                            else if (rollup.OrderByField != null && plugin.FieldChanging(rollup.OrderByField))
+                                isDependencyChanging = true;
                             else
                                 isDependencyChanging = plugin.MeetsFilterChanging(rollup.Filter);
                             break;
@@ -382,6 +384,18 @@ namespace JosephM.Xrm.CalculatedFields.Plugins.Rollups
                             records.Select(e => e.GetField(rollup.FieldRolledup)).
                                 ToArray();
                         newValue = string.Join(rollup.SeparatorString, labels);
+                        break;
+                    }
+                case RollupType.First:
+                    {
+                        var query = GetRollupQueryForLookup(rollup, id);
+                        query.AddOrder(rollup.OrderByField, rollup.OrderType);
+                        var record = XrmService.RetrieveFirst(query);
+                        newValue = record.GetField(rollup.FieldRolledup);
+                        if(newValue is Guid g && rollup.ObjectType == typeof(EntityReference))
+                        {
+                            newValue = new EntityReference(rollup.RecordTypeRolledup, g);
+                        }
                         break;
                     }
             }

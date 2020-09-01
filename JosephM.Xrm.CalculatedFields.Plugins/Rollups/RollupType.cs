@@ -5,8 +5,9 @@
     /// </summary>
     public enum RollupType
     {
-        Count = 1,
-        Exists = 2,
+        Count = 0,
+        Exists = 1,
+        First = 2,
         Max = 3,
         Mean = 4,
         Min = 5,

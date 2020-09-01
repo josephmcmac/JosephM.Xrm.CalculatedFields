@@ -118,9 +118,23 @@ namespace JosephM.Xrm.CalculatedFields.Plugins.Plugins
                                     fieldTypeOption = OptionSets.CalculatedField.FieldType.Integer;
                                     break;
                                 }
+                            case AttributeTypeCode.Lookup:
+                            case AttributeTypeCode.Owner:
+                            case AttributeTypeCode.Customer:
+                                {
+                                    fieldTypeOption = OptionSets.CalculatedField.FieldType.Lookup;
+                                    break;
+                                }
                             case AttributeTypeCode.Money:
                                 {
                                     fieldTypeOption = OptionSets.CalculatedField.FieldType.Money;
+                                    break;
+                                }
+                            case AttributeTypeCode.Picklist:
+                            case AttributeTypeCode.State:
+                            case AttributeTypeCode.Status:
+                                {
+                                    fieldTypeOption = OptionSets.CalculatedField.FieldType.Picklist;
                                     break;
                                 }
                             case AttributeTypeCode.String:

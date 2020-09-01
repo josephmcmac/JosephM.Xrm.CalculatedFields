@@ -16,11 +16,13 @@ namespace JosephM.Xrm.CalculatedFields.Plugins.Rollups
     public class LookupRollup
     {
         public LookupRollup(string recordTypeWithRollup, string rollupField, string recordTypeRolledup,
-            string fieldRolledUp, RollupType rollupType, string lookupName, Type objectType, string separatorString)
+            string fieldRolledUp, RollupType rollupType, string lookupName, Type objectType, string separatorString, string orderByField, OrderType orderType)
         {
             LookupName = lookupName;
             ObjectType = objectType;
             SeparatorString = separatorString;
+            OrderByField = orderByField ?? fieldRolledUp;
+            OrderType = orderType;
             RecordTypeWithRollup = recordTypeWithRollup;
             RollupField = rollupField;
             RecordTypeRolledup = recordTypeRolledup;
@@ -44,6 +46,8 @@ namespace JosephM.Xrm.CalculatedFields.Plugins.Rollups
 
         public Type ObjectType { get; set; }
         public string SeparatorString { get; set; }
+        public string OrderByField { get; }
+        public OrderType OrderType { get; }
         public string LookupName { get; set; }
         public string RecordTypeWithRollup { get; set; }
         public string RollupField { get; set; }
