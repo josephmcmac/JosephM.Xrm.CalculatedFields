@@ -1,0 +1,1 @@
+JosephM.Xrm.CalculatedFields.Console.exe -xrmsetting

@@ -1,0 +1,46 @@
+[
+  {
+    "Key": "Active",
+    "Value": "True"
+  },
+  {
+    "Key": "HideActive",
+    "Value": "False"
+  },
+  {
+    "Key": "Name",
+    "Value": "VM Calculated Fields"
+  },
+  {
+    "Key": "UseXrmToolingConnector",
+    "Value": "False"
+  },
+  {
+    "Key": "ToolingConnectionId",
+    "Value": null
+  },
+  {
+    "Key": "AuthenticationProviderType",
+    "Value": "ActiveDirectory"
+  },
+  {
+    "Key": "DiscoveryServiceAddress",
+    "Value": "http:\/\/qa2012\/XRMServices\/2011\/Discovery.svc"
+  },
+  {
+    "Key": "OrganizationUniqueName",
+    "Value": "CalculatedFields"
+  },
+  {
+    "Key": "Domain",
+    "Value": "auqa2012"
+  },
+  {
+    "Key": "Username",
+    "Value": "joseph"
+  },
+  {
+    "Key": "Password",
+    "Value": "AQAAANCMnd8BFdERjHoAwE\/Cl+sBAAAAhKMdQKoH7E6gyhDOgdFf+wAAAAACAAAAAAAQZgAAAAEAACAAAABqWfEd+UrJV5jg2rTdNR+3hOMLkIfqTuoWWdAwgWJMSgAAAAAOgAAAAAIAACAAAAA+fAwRxCUzpx99N3RlyUupPh9XtjNmBugqn4lfxEnFaSAAAADh3gpHFF7TrELbXoqO2wa6qLBoXvKEWitEncKZNbj3EkAAAABMqRPaM73stjqxAJ8eV5lERAsjFJn\/hG3wgmWDsZCwiX8rKCDe2qQEyTpJpEOlxLo6\/1g32ax\/MzkHCEi45Dua"
+  }
+]
