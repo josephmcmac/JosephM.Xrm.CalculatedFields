@@ -2,6 +2,7 @@
 using JosephM.Xrm.CalculatedFields.Plugins.Services;
 using JosephM.Xrm.CalculatedFields.Plugins.SharePoint;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
+using System;
 using System.Collections.Generic;
 
 namespace JosephM.Xrm.CalculatedFields.Plugins.Test
@@ -82,5 +83,8 @@ namespace JosephM.Xrm.CalculatedFields.Plugins.Test
                 return _localisationService;
             }
         }
+
+        public Guid ServiceCalendarId => new Guid("6a2c3c2f-a2ec-ea11-8143-000c290a70aa");
+        //var calendar = XrmService.Retrieve(Entities.calendar, calendarId);//var calendarRules = ((EntityCollection)calendar.GetField("calendarrules")).Entities;//calendarRules.First().SetField(Fields.calendarrule_.starttime, new DateTime(2000, 1, 1, 0, 0, 0, DateTimeKind.Utc));//XrmService.Update(calendar);
     }
 }

@@ -69,6 +69,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="CalculatedFieldsTests.cs" />
+    <Compile Include="CalculatedServiceTests.cs" />
     <Compile Include="Debug.cs" />
     <Compile Include="CalculatedXrmTest.cs" />
     <Compile Include="DebugUserInterface.cs" />

@@ -4,8 +4,9 @@
 CalculatedJs = new Object();
 CalculatedJs.options = {
     Type: {
-        Concatenate: 0,
-        Rollup: 1
+        AddTime: 0,
+        Concatenate: 1,
+        Rollup: 2
     },
     RollupType: {
         Count: 0,
@@ -24,6 +25,15 @@ CalculatedJs.options = {
         OtherString: 5,
         Pipe: 3,
         Space: 4
+    },
+    TimeType: {
+        Days: 2,
+        Hours: 1,
+        Minutes: 0,
+        Months: 3,
+        WorkDays: 6,
+        WorkHours: 5,
+        WorkMinutes: 4
     }
 };
 
@@ -34,13 +44,14 @@ CalculatedJs.RunOnLoad = function () {
     CalculatedJs.PopulateTypeLists(["jmcg_entitytypeselectionfield", "jmcg_entitytyperolledupselectionfield"]);
     CalculatedJs.AddFieldSelectionPicklist(null, "jmcg_entitytype", "jmcg_fieldselectionfield", "jmcg_field", ["String", "Integer", "Money", "Decimal", "Double", "Boolean", "Memo"]);
     CalculatedJs.AddFieldSelectionPicklist(CalculatedJs.options.Type.Rollup, "jmcg_entitytyperolledup", "jmcg_fieldreferencingselectionfield", "jmcg_fieldreferencing",["Lookup", "Customer", "Owner"]);
-    CalculatedJs.AddFieldSelectionPicklist(CalculatedJs.options.Type.Rollup, "jmcg_entitytyperolledup", "jmcg_fieldrolledupselectionfield", "jmcg_fieldrolledup", ["String", "Integer", "Money", "Decimal", "Double", "Boolean", "UniqueIdentifier", "Lookup", "Memo"]);
+    CalculatedJs.AddFieldSelectionPicklist(CalculatedJs.options.Type.Rollup, "jmcg_entitytyperolledup", "jmcg_fieldrolledupselectionfield", "jmcg_fieldrolledup", ["String", "Integer", "Money", "Decimal", "Double", "Boolean", "UniqueIdentifier", "Lookup", "Memo", "DateTime", "Lookup", "Customer", "Owner" ]);
     CalculatedJs.AddFieldSelectionPicklist(CalculatedJs.options.Type.Rollup, "jmcg_entitytyperolledup", "jmcg_orderrollupbyfieldselectionfield", "jmcg_orderrollupbyfield", null);
     CalculatedJs.AddFieldSelectionPicklist(CalculatedJs.options.Type.Concatenate, "jmcg_entitytype", "jmcg_concatenatefield1selectionfield", "jmcg_concatenatefield1", null);
     CalculatedJs.AddFieldSelectionPicklist(CalculatedJs.options.Type.Concatenate, "jmcg_entitytype", "jmcg_concatenatefield2selectionfield", "jmcg_concatenatefield2", null);
     CalculatedJs.AddFieldSelectionPicklist(CalculatedJs.options.Type.Concatenate, "jmcg_entitytype", "jmcg_concatenatefield3selectionfield", "jmcg_concatenatefield3", null);
     CalculatedJs.AddFieldSelectionPicklist(CalculatedJs.options.Type.Concatenate, "jmcg_entitytype", "jmcg_concatenatefield4selectionfield", "jmcg_concatenatefield4", null);
     CalculatedJs.AddFieldSelectionPicklist(CalculatedJs.options.Type.Concatenate, "jmcg_entitytype", "jmcg_concatenatefield5selectionfield", "jmcg_concatenatefield5", null);
+    CalculatedJs.AddFieldSelectionPicklist(CalculatedJs.options.Type.AddTime, "jmcg_entitytype", "jmcg_addtimetofieldselectionfield", "jmcg_addtimetofield", ["DateTime"]);
 
     CalculatedJs.RefreshVisibility();
 };
@@ -55,6 +66,9 @@ CalculatedJs.RunOnChange = function (fieldName) {
             CalculatedJs.RefreshVisibility();
             break;
         case "jmcg_separatortype":
+            CalculatedJs.RefreshVisibility();
+            break;
+        case "jmcg_timetype":
             CalculatedJs.RefreshVisibility();
             break;
         case "jmcg_entitytypeselectionfield":
@@ -104,6 +118,16 @@ CalculatedJs.RefreshVisibility = function () {
     calculatedPageUtility.SetFieldMandatory("jmcg_orderrollupbyfield", rollupFirst);
     calculatedPageUtility.SetFieldVisibility("jmcg_orderrollupbyfieldordertype", rollupFirst);
     calculatedPageUtility.SetFieldMandatory("jmcg_orderrollupbyfieldordertype", rollupFirst);
+    var isAddTime = type == CalculatedJs.options.Type.AddTime;
+    calculatedPageUtility.SetSectionVisibility("secAddTime", isAddTime);
+    calculatedPageUtility.SetFieldMandatory("jmcg_timetype", isAddTime);
+    calculatedPageUtility.SetFieldMandatory("jmcg_timeamount", isAddTime);
+    var timeType = calculatedPageUtility.GetFieldValue("jmcg_timetype");
+    var isWorkTime = timeType == CalculatedJs.options.TimeType.WorkDays
+        || timeType == CalculatedJs.options.TimeType.WorkHours
+        || timeType == CalculatedJs.options.TimeType.WorkMinutes;
+    calculatedPageUtility.SetFieldVisibility("jmcg_calendarid", isWorkTime);
+    calculatedPageUtility.SetFieldMandatory("jmcg_calendarid", isWorkTime);
 };
 
 CalculatedJs.AddFieldSelectionPicklist = function (calculationType, entityField, fieldSelectionField, targetField, validTypes) {

@@ -14,6 +14,110 @@ namespace JosephM.Xrm.CalculatedFields.Plugins.Test
     public class CalculatedFieldsTests : CalculatedXrmTest
     {
         [TestMethod]
+        public void CalculatedFieldsAddTimeTests()
+        {
+            DeleteAllCalculatedFields();
+
+            var configs = new[]
+            {
+                new TestAddTimeConfig(Entities.jmcg_testentity, Fields.jmcg_testentity_.jmcg_dateaddresultutc, Fields.jmcg_testentity_.jmcg_dateaddtoutc, OptionSets.CalculatedField.TimeType.WorkDays, 1, ServiceCalendarId, true),
+                new TestAddTimeConfig(Entities.jmcg_testentity, Fields.jmcg_testentity_.jmcg_dateaddresultdateonly, Fields.jmcg_testentity_.jmcg_dateaddtodateonly, OptionSets.CalculatedField.TimeType.WorkDays, 1, ServiceCalendarId, false),
+                new TestAddTimeConfig(Entities.jmcg_testentity, Fields.jmcg_testentity_.jmcg_dateaddresultnotimezone, Fields.jmcg_testentity_.jmcg_dateaddtonotimezone, OptionSets.CalculatedField.TimeType.WorkDays, 1, ServiceCalendarId, true),
+            };
+
+            var calculatedRecords = new List<Entity>();
+            foreach (var config in configs)
+            {
+                calculatedRecords.Add(CreateTestRecord(Entities.jmcg_calculatedfield, new Dictionary<string, object>
+                {
+                    { Fields.jmcg_calculatedfield_.jmcg_type, new OptionSetValue(OptionSets.CalculatedField.Type.AddTime) },
+                    { Fields.jmcg_calculatedfield_.jmcg_name, config.Field },
+                    { Fields.jmcg_calculatedfield_.jmcg_entitytype, config.EntityType },
+                    { Fields.jmcg_calculatedfield_.jmcg_field, config.Field },
+                    { Fields.jmcg_calculatedfield_.jmcg_addtimetofield, config.FieldSource },
+                    { Fields.jmcg_calculatedfield_.jmcg_timetype, new OptionSetValue(config.TimeType) },
+                    { Fields.jmcg_calculatedfield_.jmcg_timeamount, config.TimeAmount },
+                    { Fields.jmcg_calculatedfield_.jmcg_calendarid, config.CalendarId.ToString() },
+                }));
+            }
+
+
+            var fridayNoon = new DateTime(2020, 7, 31, 12, 0, 0, DateTimeKind.Unspecified);
+            var fridayNoonUtc = LocalisationService.ConvertTargetToUtc(fridayNoon);
+            var mondayNoon = new DateTime(2020, 8, 3, 12, 0, 0, DateTimeKind.Unspecified);
+            var mondayNoonUtc = LocalisationService.ConvertTargetToUtc(mondayNoon);
+            var tuesdayNoon = new DateTime(2020, 8, 4, 12, 0, 0, DateTimeKind.Unspecified);
+            var tuesdayNoonUtc = LocalisationService.ConvertTargetToUtc(tuesdayNoon);
+            var fridayStart = new DateTime(2020, 7, 31, 0, 0, 0, DateTimeKind.Unspecified);
+            var fridayStartUtc = LocalisationService.ConvertTargetToUtc(fridayNoon);
+            var mondayStart = new DateTime(2020, 8, 3, 0, 0, 0, DateTimeKind.Unspecified);
+            var mondayStartUtc = LocalisationService.ConvertTargetToUtc(mondayNoon);
+
+            var testEntity = new Entity(Entities.jmcg_testentity);
+            foreach(var config in configs)
+            {
+                testEntity.SetField(config.FieldSource, config.UseTime ? fridayNoon : fridayStart);
+            }
+            testEntity = CreateAndRetrieve(testEntity);
+            foreach (var config in configs)
+            {
+                var addedTime = testEntity.GetDateTimeField(config.Field);
+                Assert.IsTrue(addedTime.HasValue);
+                if(config.UseTime)
+                {
+                    if (addedTime.Value.Kind == DateTimeKind.Utc)
+                    {
+                        Assert.AreEqual(mondayNoonUtc, addedTime.Value);
+                    }
+                    else
+                    {
+                        //Assert.AreEqual(mondayNoon, addedTime.Value);
+                    }
+                }
+                else
+                {
+                    //Assert.AreEqual(mondayStart, addedTime.Value);
+                }
+            }
+            foreach (var config in configs)
+            {
+                testEntity.SetField(config.FieldSource, config.UseTime ? mondayNoonUtc : mondayStartUtc);
+            }
+            testEntity = UpdateFieldsAndRetreive(testEntity, configs.Select(c => c.FieldSource).ToArray());
+            foreach (var config in configs)
+            {
+                var addedTime = testEntity.GetDateTimeField(config.Field);
+                Assert.IsTrue(addedTime.HasValue);
+                if (config.UseTime)
+                {
+                    if (addedTime.Value.Kind == DateTimeKind.Utc)
+                    {
+                        Assert.AreEqual(tuesdayNoonUtc, addedTime.Value);
+                    }
+                    else
+                    {
+                        //Assert.AreEqual(mondayNoon, addedTime.Value);
+                    }
+                }
+                else
+                {
+                    //Assert.AreEqual(mondayStart, addedTime.Value);
+                }
+            }
+
+            foreach (var config in configs)
+            {
+                testEntity.SetField(config.FieldSource, null);
+            }
+            testEntity = UpdateFieldsAndRetreive(testEntity, configs.Select(c => c.FieldSource).ToArray());
+            foreach (var config in configs)
+            {
+                var addedTime = testEntity.GetDateTimeField(config.Field);
+                Assert.IsFalse(addedTime.HasValue);
+            }
+        }
+
+        [TestMethod]
         public void CalculatedFieldsRollupFirstTests()
         {
             //these also need refreshing when the order field changed so have specific test for them
@@ -1424,6 +1528,28 @@ namespace JosephM.Xrm.CalculatedFields.Plugins.Test
             public string SeparatorString { get; set; }
             public bool SuffixSpace { get; set; }
             public bool IncludeEmpty { get; set; }
+        }
+
+        public class TestAddTimeConfig
+        {
+            public TestAddTimeConfig(string entityType, string field, string fieldSource, int timeType, int timeAmount, Guid calendarId, bool useTime)
+            {
+                EntityType = entityType;
+                Field = field;
+                FieldSource = fieldSource;
+                TimeType = timeType;
+                TimeAmount = timeAmount;
+                CalendarId = calendarId;
+                UseTime = useTime;
+            }
+
+            public string EntityType { get; set; }
+            public string Field { get; set; }
+            public string FieldSource { get; set; }
+            public int TimeType { get; set; }
+            public int TimeAmount { get; set; }
+            public Guid CalendarId { get; set; }
+            public bool UseTime { get; set; }
         }
     }
 }

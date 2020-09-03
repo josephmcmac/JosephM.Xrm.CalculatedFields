@@ -29,6 +29,223 @@ namespace JosephM.Xrm.CalculatedFields.Plugins.Services
             LocalisationService = localisationService;
         }
 
+        public DateTime AddTime(DateTime dateAddTo, int timeType, int timeAmount, Guid? workCalendarId)
+        {
+            var startTimeUtc = dateAddTo.Kind == DateTimeKind.Utc
+                ? dateAddTo
+                : LocalisationService.ConvertTargetToUtc(dateAddTo);
+
+            var somewhereInTimeUtc = startTimeUtc;
+
+            switch (timeType)
+            {
+                case OptionSets.CalculatedField.TimeType.Minutes:
+                    {
+                        somewhereInTimeUtc = somewhereInTimeUtc.AddMinutes(timeAmount);
+                        break;
+                    }
+                case OptionSets.CalculatedField.TimeType.Hours:
+                    {
+                        somewhereInTimeUtc = somewhereInTimeUtc.AddHours(timeAmount);
+                        break;
+                    }
+                case OptionSets.CalculatedField.TimeType.Days:
+                    {
+                        somewhereInTimeUtc = LocalisationService.ConvertTargetToUtc(LocalisationService.ConvertToTargetTime(somewhereInTimeUtc).AddDays(timeAmount));
+                        break;
+                    }
+                case OptionSets.CalculatedField.TimeType.Months:
+                    {
+                        somewhereInTimeUtc = LocalisationService.ConvertTargetToUtc(LocalisationService.ConvertToTargetTime(somewhereInTimeUtc).AddMonths(timeAmount));
+                        break;
+                    }
+                case OptionSets.CalculatedField.TimeType.WorkMinutes:
+                case OptionSets.CalculatedField.TimeType.WorkHours:
+                case OptionSets.CalculatedField.TimeType.WorkDays:
+                    {
+                        if(!workCalendarId.HasValue)
+                        {
+                            throw new ArgumentNullException(nameof(workCalendarId), "Required for work time type");
+                        }
+                        var bufferMinutes = 0;
+                        switch (timeType)
+                        {
+                            case OptionSets.CalculatedField.TimeType.WorkMinutes:
+                                {
+                                    bufferMinutes = timeAmount;
+                                    break;
+                                }
+                            case OptionSets.CalculatedField.TimeType.WorkHours:
+                                {
+                                    bufferMinutes = timeAmount * 60;
+                                    break;
+                                }
+                            case OptionSets.CalculatedField.TimeType.WorkDays:
+                                {
+                                    bufferMinutes = timeAmount * 60 * 24;
+                                    break;
+                                }
+                            default:
+                                {
+                                    throw new InvalidPluginExecutionException("Not implemented for time type of " + timeType);
+                                }
+                        }
+                        var isNegative = timeAmount < 0;
+                        bufferMinutes = (bufferMinutes * 2) + (30 * (isNegative ? -1 : 1) * 60 * 24); //double days + 30?
+                        var outerBoundUtc = startTimeUtc.AddMinutes(bufferMinutes);
+                        var rangeStartUtc = isNegative ? outerBoundUtc : startTimeUtc.AddDays(-1);
+                        var rangeEndUtc = isNegative ? startTimeUtc.AddDays(1) : outerBoundUtc;
+                        var request = new Microsoft.Crm.Sdk.Messages.ExpandCalendarRequest()
+                        {
+                            CalendarId = workCalendarId.Value,
+                            Start = rangeStartUtc,
+                            End = rangeEndUtc
+                        };
+                        var response = (Microsoft.Crm.Sdk.Messages.ExpandCalendarResponse)XrmService.Execute(request);
+
+                        var publicHolidays = GetPublicHolidays(rangeStartUtc, rangeEndUtc, workCalendarId.Value);
+                        Func<DateTime, bool> getIsPublicHoliday = (DateTime utc) =>
+                        {
+                            var vicTime = LocalisationService.ConvertToTargetTime(utc);
+                            return publicHolidays.Any(h => h.Year == vicTime.Year && h.Month == vicTime.Month && h.Day == vicTime.Day);
+                        };
+
+                        var sortTimeSlots = isNegative
+                            ? response.result.Where(t => t.Start.HasValue && t.End.HasValue).OrderByDescending(t => t.Start).ToArray()
+                            : response.result.Where(t => t.Start.HasValue && t.End.HasValue).OrderBy(t => t.Start).ToArray();
+
+                        var daysCounted = new List<Tuple<int, int, int>>();
+                        Func<DateTime, bool> dayAlreadyCounted = (dt) =>
+                        {
+                            var tuple = new Tuple<int, int, int>(dt.Year, dt.Month, dt.Day);
+                            if (daysCounted.Any(t => t.Item1 == tuple.Item1
+                 && t.Item2 == tuple.Item2
+                 && t.Item3 == tuple.Item3))
+                            {
+                                return true;
+                            }
+                            else
+                            {
+                                daysCounted.Add(tuple);
+                                return false;
+                            }
+                        };
+
+
+                        var minutesRemaining = Math.Abs(timeType == OptionSets.CalculatedField.TimeType.WorkMinutes
+                            ? timeAmount
+                            : 60 * timeAmount);
+                        foreach (var timeSlot in sortTimeSlots)
+                        {
+                            if (timeType == OptionSets.CalculatedField.TimeType.WorkDays)
+                            {
+                                var somewhereInTimeLocal = LocalisationService.ConvertToTargetTime(somewhereInTimeUtc);
+                                var spanStartLocal = LocalisationService.ConvertToTargetTime(timeSlot.Start.Value);
+                                var isSameDay = somewhereInTimeLocal.Year == spanStartLocal.Year
+                                    && somewhereInTimeLocal.Month == spanStartLocal.Month
+                                    && somewhereInTimeLocal.Day == spanStartLocal.Day;
+                                var isGreaterThanStart = somewhereInTimeLocal > spanStartLocal;
+
+                                var countDay = !getIsPublicHoliday(spanStartLocal)
+                                    && (daysCounted.Any()
+                                    || ((isNegative && (isSameDay || spanStartLocal < somewhereInTimeUtc))
+                                        || (!isNegative && (isSameDay || spanStartLocal > somewhereInTimeUtc))));
+
+                                var dayCounted = countDay && dayAlreadyCounted(spanStartLocal);
+
+                                if (daysCounted.Count == Math.Abs(timeAmount) + 1)
+                                {
+                                    var resultLocal = new DateTime(spanStartLocal.Year, spanStartLocal.Month, spanStartLocal.Day, somewhereInTimeLocal.Hour, somewhereInTimeLocal.Minute, somewhereInTimeLocal.Second, DateTimeKind.Unspecified);
+                                    return dateAddTo.Kind == DateTimeKind.Utc
+                                            ? LocalisationService.ConvertTargetToUtc(resultLocal)
+                                            : resultLocal;
+                                }
+                            }
+                            else
+                            {
+                                var spanEndLocal = LocalisationService.ConvertToTargetTime(timeSlot.End.Value);
+                                var isPublicHoliday = getIsPublicHoliday(spanEndLocal);
+                                if (isNegative)
+                                {
+                                    while (somewhereInTimeUtc > timeSlot.End.Value)
+                                    {
+                                        somewhereInTimeUtc = somewhereInTimeUtc.AddMinutes(-1);
+                                    }
+                                    while (somewhereInTimeUtc > timeSlot.Start.Value)
+                                    {
+                                        somewhereInTimeUtc = somewhereInTimeUtc.AddMinutes(-1);
+                                        minutesRemaining--;
+                                        if (minutesRemaining <= 0)
+                                        {
+                                            return dateAddTo.Kind == DateTimeKind.Utc
+                                                ? somewhereInTimeUtc
+                                                : LocalisationService.ConvertToTargetTime(somewhereInTimeUtc);
+                                        }
+                                    }
+                                }
+                                else
+                                {
+                                    while (somewhereInTimeUtc < timeSlot.Start.Value)
+                                    {
+                                        somewhereInTimeUtc = somewhereInTimeUtc.AddMinutes(1);
+                                    }
+                                    while (somewhereInTimeUtc < timeSlot.End.Value)
+                                    {
+                                        somewhereInTimeUtc = somewhereInTimeUtc.AddMinutes(1);
+                                        minutesRemaining--;
+                                        if (minutesRemaining <= 0)
+                                        {
+                                            return dateAddTo.Kind == DateTimeKind.Utc
+                                                ? somewhereInTimeUtc
+                                                : LocalisationService.ConvertToTargetTime(somewhereInTimeUtc);
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                        break;
+                    }
+            }
+            return dateAddTo.Kind == DateTimeKind.Utc
+                ? somewhereInTimeUtc
+                : LocalisationService.ConvertToTargetTime(somewhereInTimeUtc);
+        }
+
+        public IEnumerable<DateTime> GetPublicHolidays(DateTime startDateUtc, DateTime endDateUtc, Guid calendarId)
+        {
+            var vicStartTime = LocalisationService.ConvertToTargetTime(startDateUtc);
+            var vicEndTime = LocalisationService.ConvertToTargetTime(endDateUtc);
+            var myStart = new DateTime(vicStartTime.Year, vicStartTime.Month, vicStartTime.Day, vicStartTime.Hour, vicStartTime.Minute, vicStartTime.Second, DateTimeKind.Utc).AddDays(-2);
+            var myEnd = new DateTime(vicEndTime.Year, vicEndTime.Month, vicEndTime.Day, vicEndTime.Hour, vicEndTime.Minute, vicEndTime.Second, DateTimeKind.Utc).AddDays(2);
+
+            var query = XrmService.BuildQuery(Entities.calendar, null, new[] { new ConditionExpression(Fields.calendar_.calendarid, ConditionOperator.Equal, calendarId) }, null);
+            var join1 = query.AddLink(Entities.calendar, Fields.calendar_.holidayschedulecalendarid, Fields.calendar_.calendarid);
+            var join2 = join1.AddLink(Entities.calendarrule, Fields.calendar_.calendarid, Fields.calendarrule_.calendarid);
+            join2.EntityAlias = "CR";
+            join2.Columns = XrmService.CreateColumnSet(new string[] { Fields.calendarrule_.starttime, Fields.calendarrule_.effectiveintervalend });
+            join2.LinkCriteria.AddCondition(new ConditionExpression(Fields.calendarrule_.starttime, ConditionOperator.GreaterThan, myStart));
+            join2.LinkCriteria.AddCondition(new ConditionExpression(Fields.calendarrule_.effectiveintervalend, ConditionOperator.LessThan, myEnd));
+            var publicHolidays = XrmService.RetrieveAll(query);
+
+            var dates = new List<DateTime>();
+
+            foreach (var holiday in publicHolidays)
+            {
+                var start = (DateTime?)holiday.GetField("CR." + Fields.calendarrule_.starttime);
+                var end = (DateTime?)holiday.GetField("CR." + Fields.calendarrule_.effectiveintervalend);
+                if (start.HasValue && end.HasValue)
+                {
+                    while (start < end)
+                    {
+                        dates.Add(start.Value);
+                        start = start.Value.AddDays(1);
+                    }
+                }
+            }
+
+            return dates;
+        }
+
         public void RefreshPluginRegistrations(Guid changedEntityId, bool isCurrentlyActive)
         {
             //todo delete, inactive
@@ -78,7 +295,8 @@ namespace JosephM.Xrm.CalculatedFields.Plugins.Services
                     addToDictionary(rolledUpType, PluginMessage.Update, PluginStage.PostEvent, calculatedField);
                     addToDictionary(rolledUpType, PluginMessage.Delete, PluginStage.PostEvent, calculatedField);
                 }
-                if (calculationType == OptionSets.CalculatedField.Type.Concatenate)
+                if (calculationType == OptionSets.CalculatedField.Type.Concatenate
+                    || calculationType == OptionSets.CalculatedField.Type.AddTime)
                 {
                     addToDictionary(targetEntity, PluginMessage.Create, PluginStage.PreOperationEvent, calculatedField);
                     addToDictionary(targetEntity, PluginMessage.Update, PluginStage.PreOperationEvent, calculatedField);
@@ -297,9 +515,9 @@ namespace JosephM.Xrm.CalculatedFields.Plugins.Services
                 }
             }
 
-            foreach(var calculatedConfig in calculatedConfigs)
+            foreach(var calculatedConfig in calculatedConfigs.Except(rollupCalculations).ToArray())
             {
-                if(IsDependencyChanging(calculatedConfig, plugin))
+                if (IsDependencyChanging(calculatedConfig, plugin))
                 {
                     var fieldCalculated = calculatedConfig.CalculatedFieldEntity.GetStringField(Fields.jmcg_calculatedfield_.jmcg_field);
                     var oldValue = plugin.GetField(fieldCalculated);
@@ -329,6 +547,19 @@ namespace JosephM.Xrm.CalculatedFields.Plugins.Services
                             .ToArray();
                         return string.Join(GetSeparatorString(calculatedConfig.CalculatedFieldEntity), concatValues);
                     }
+                case OptionSets.CalculatedField.Type.AddTime:
+                    {
+                        var addTimeTo = (DateTime?)getField(calculatedConfig.CalculatedFieldEntity.GetStringField(Fields.jmcg_calculatedfield_.jmcg_addtimetofield));
+                        if (addTimeTo.HasValue)
+                        {
+                            var calendarId = calculatedConfig.CalculatedFieldEntity.GetStringField(Fields.jmcg_calculatedfield_.jmcg_calendarid);
+                            return AddTime(addTimeTo.Value, calculatedConfig.CalculatedFieldEntity.GetOptionSetValue(Fields.jmcg_calculatedfield_.jmcg_timetype), calculatedConfig.CalculatedFieldEntity.GetInt(Fields.jmcg_calculatedfield_.jmcg_timeamount), calendarId == null ? null : (Guid?)new Guid(calendarId));
+                        }
+                        else
+                        {
+                            return null;
+                        }
+                    }
             }
             throw new NotImplementedException($"Not implemented for type {calculationType}");
         }
@@ -353,6 +584,11 @@ namespace JosephM.Xrm.CalculatedFields.Plugins.Services
                 case OptionSets.CalculatedField.Type.Concatenate:
                     {
                         dependencyFields.AddRange(GetConcatenateFields(calculatedConfig));
+                        break;
+                    }
+                case OptionSets.CalculatedField.Type.AddTime:
+                    {
+                        dependencyFields.Add(calculatedConfig.CalculatedFieldEntity.GetStringField(Fields.jmcg_calculatedfield_.jmcg_addtimetofield));
                         break;
                     }
             }

@@ -1,6 +1,7 @@
 ﻿using JosephM.Xrm.CalculatedFields.Plugins.Xrm;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Schema;
+using System;
 using System.IO;
 using System.Web.UI.WebControls;
 using System.Xml;
@@ -15,6 +16,23 @@ namespace JosephM.Xrm.CalculatedFields.Plugins.Test
         public void Debug()
         {
             var me = XrmService.WhoAmI();
+
+            //var calendarId = new Guid("6a2c3c2f-a2ec-ea11-8143-000c290a70aa");
+
+            //var dayUtc = DateTime.UtcNow.AddMonths(1);
+            //var dayLocal = LocalisationService.ConvertToTargetTime(dayUtc);
+
+            //var calc1 = LocalisationService.ConvertToTargetTime(CalculatedService.AddCalendarTime(dayUtc, OptionSets.CalculatedField.TimeType.WorkMinutes, 10, calendarId));
+            //var calc2 = LocalisationService.ConvertToTargetTime(CalculatedService.AddCalendarTime(dayUtc, OptionSets.CalculatedField.TimeType.WorkHours, 10, calendarId));
+            //var calc3 = LocalisationService.ConvertToTargetTime(CalculatedService.AddCalendarTime(dayUtc, OptionSets.CalculatedField.TimeType.WorkDays, 10, calendarId));
+
+
+
+            //var calc1b = LocalisationService.ConvertToTargetTime(CalculatedService.AddCalendarTime(dayUtc, OptionSets.CalculatedField.TimeType.WorkMinutes, -10, calendarId));
+            //var calc2b = LocalisationService.ConvertToTargetTime(CalculatedService.AddTime(dayUtc, OptionSets.CalculatedField.TimeType.WorkHours, -10, calendarId));
+            //var calc3b = LocalisationService.ConvertToTargetTime(CalculatedService.AddTime(dayUtc, OptionSets.CalculatedField.TimeType.WorkDays, -10, calendarId));
+
+            //var huh = dayUtc;
 
             //var entity = XrmService.GetFirst(Entities.jmcg_calculatedfield);
 
