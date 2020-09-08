@@ -6,7 +6,8 @@ CalculatedJs.options = {
     Type: {
         AddTime: 0,
         Concatenate: 1,
-        Rollup: 2
+        Rollup: 2,
+        TimeTaken: 3
     },
     RollupType: {
         Count: 0,
@@ -34,6 +35,14 @@ CalculatedJs.options = {
         WorkDays: 6,
         WorkHours: 5,
         WorkMinutes: 4
+    },
+    TimeTakenMeasure: {
+        Days: 2,
+        Hours: 1,
+        Minutes: 0,
+        WorkDays: 5,
+        WorkHours: 4,
+        WorkMinutes: 3
     }
 };
 
@@ -52,6 +61,8 @@ CalculatedJs.RunOnLoad = function () {
     CalculatedJs.AddFieldSelectionPicklist(CalculatedJs.options.Type.Concatenate, "jmcg_entitytype", "jmcg_concatenatefield4selectionfield", "jmcg_concatenatefield4", null);
     CalculatedJs.AddFieldSelectionPicklist(CalculatedJs.options.Type.Concatenate, "jmcg_entitytype", "jmcg_concatenatefield5selectionfield", "jmcg_concatenatefield5", null);
     CalculatedJs.AddFieldSelectionPicklist(CalculatedJs.options.Type.AddTime, "jmcg_entitytype", "jmcg_addtimetofieldselectionfield", "jmcg_addtimetofield", ["DateTime"]);
+    CalculatedJs.AddFieldSelectionPicklist(CalculatedJs.options.Type.TimeTaken, "jmcg_entitytype", "jmcg_timetakenstartfieldselectionfield", "jmcg_timetakenstartfield", ["DateTime"]);
+    CalculatedJs.AddFieldSelectionPicklist(CalculatedJs.options.Type.TimeTaken, "jmcg_entitytype", "jmcg_timetakenendfieldselectionfield", "jmcg_timetakenendfield", ["DateTime"]);
 
     CalculatedJs.RefreshVisibility();
 };
@@ -69,6 +80,9 @@ CalculatedJs.RunOnChange = function (fieldName) {
             CalculatedJs.RefreshVisibility();
             break;
         case "jmcg_timetype":
+            CalculatedJs.RefreshVisibility();
+            break;
+        case "jmcg_timetakenmeasure":
             CalculatedJs.RefreshVisibility();
             break;
         case "jmcg_entitytypeselectionfield":
@@ -122,12 +136,22 @@ CalculatedJs.RefreshVisibility = function () {
     calculatedPageUtility.SetSectionVisibility("secAddTime", isAddTime);
     calculatedPageUtility.SetFieldMandatory("jmcg_timetype", isAddTime);
     calculatedPageUtility.SetFieldMandatory("jmcg_timeamount", isAddTime);
+    var isTimeTaken = type == CalculatedJs.options.Type.TimeTaken;
+    calculatedPageUtility.SetSectionVisibility("secTimeTaken", isTimeTaken);
+    calculatedPageUtility.SetFieldMandatory("jmcg_timetakenstartfield", isTimeTaken);
+    calculatedPageUtility.SetFieldMandatory("jmcg_timetakenendfield", isTimeTaken);
+    calculatedPageUtility.SetFieldMandatory("jmcg_timetakenmeasure", isTimeTaken);
     var timeType = calculatedPageUtility.GetFieldValue("jmcg_timetype");
-    var isWorkTime = timeType == CalculatedJs.options.TimeType.WorkDays
+    var isWorkTimeType = timeType == CalculatedJs.options.TimeType.WorkDays
         || timeType == CalculatedJs.options.TimeType.WorkHours
         || timeType == CalculatedJs.options.TimeType.WorkMinutes;
-    calculatedPageUtility.SetFieldVisibility("jmcg_calendarid", isWorkTime);
-    calculatedPageUtility.SetFieldMandatory("jmcg_calendarid", isWorkTime);
+    var timeTakenMeasure = calculatedPageUtility.GetFieldValue("jmcg_timetakenmeasure");
+    var isWorkTimeMeasure = timeTakenMeasure == CalculatedJs.options.TimeTakenMeasure.WorkDays
+        || timeTakenMeasure == CalculatedJs.options.TimeTakenMeasure.WorkHours
+        || timeTakenMeasure == CalculatedJs.options.TimeTakenMeasure.WorkMinutes;
+    calculatedPageUtility.SetSectionVisibility("secWorkCalendar", isWorkTimeType || isWorkTimeMeasure);
+    calculatedPageUtility.SetFieldMandatory("jmcg_calendarid", isWorkTimeType || isWorkTimeMeasure);
+
 };
 
 CalculatedJs.AddFieldSelectionPicklist = function (calculationType, entityField, fieldSelectionField, targetField, validTypes) {

@@ -14,6 +14,51 @@ namespace JosephM.Xrm.CalculatedFields.Plugins.Test
     public class CalculatedFieldsTests : CalculatedXrmTest
     {
         [TestMethod]
+        public void CalculatedFieldsTimeTakenTests()
+        {
+            DeleteAllCalculatedFields();
+
+            //create time taken field for work minutes
+            CreateTestRecord(Entities.jmcg_calculatedfield, new Dictionary<string, object>
+                {
+                    { Fields.jmcg_calculatedfield_.jmcg_type, new OptionSetValue(OptionSets.CalculatedField.Type.TimeTaken) },
+                    { Fields.jmcg_calculatedfield_.jmcg_name, Fields.jmcg_testentity_.jmcg_timetakenutc },
+                    { Fields.jmcg_calculatedfield_.jmcg_entitytype, Entities.jmcg_testentity },
+                    { Fields.jmcg_calculatedfield_.jmcg_field, Fields.jmcg_testentity_.jmcg_timetakenutc },
+                    { Fields.jmcg_calculatedfield_.jmcg_timetakenmeasure, new OptionSetValue(OptionSets.CalculatedField.TimeTakenMeasure.WorkMinutes) },
+                    { Fields.jmcg_calculatedfield_.jmcg_timetakenstartfield, Fields.jmcg_testentity_.jmcg_timetakenstartutc },
+                    { Fields.jmcg_calculatedfield_.jmcg_timetakenendfield, Fields.jmcg_testentity_.jmcg_timetakenendutc },
+                    { Fields.jmcg_calculatedfield_.jmcg_calendarid, ServiceCalendarId.ToString() },
+                });
+
+            var fridayEnd = new DateTime(2020, 7, 31, 17, 0, 0, DateTimeKind.Unspecified);
+            var fridayEndUtc = LocalisationService.ConvertTargetToUtc(fridayEnd);
+            var mondayStart = new DateTime(2020, 8, 3, 8, 30, 0, DateTimeKind.Unspecified);
+            var mondayStartUtc = LocalisationService.ConvertTargetToUtc(mondayStart);
+            var mondayEnd = new DateTime(2020, 8, 3, 17, 0, 0, DateTimeKind.Unspecified);
+            var tuesdayStart = new DateTime(2020, 8, 4, 8, 30, 0, DateTimeKind.Unspecified);
+            var tuesdayStartUtc = LocalisationService.ConvertTargetToUtc(tuesdayStart);
+
+            //create test record and verify calculated
+            var testRecord = CreateTestRecord(Entities.jmcg_testentity, new Dictionary<string, object>
+            {
+                { Fields.jmcg_testentity_.jmcg_timetakenstartutc, fridayEnd.AddMinutes(-15) },
+                { Fields.jmcg_testentity_.jmcg_timetakenendutc, mondayStart.AddMinutes(15) }
+            });
+            Assert.AreEqual(30, testRecord.GetInt(Fields.jmcg_testentity_.jmcg_timetakenutc));
+
+            //change end and verify updated
+            testRecord.SetField(Fields.jmcg_testentity_.jmcg_timetakenendutc, tuesdayStartUtc.AddMinutes(15));
+            testRecord = UpdateFieldsAndRetreive(testRecord, Fields.jmcg_testentity_.jmcg_timetakenendutc);
+            Assert.AreEqual(540, testRecord.GetInt(Fields.jmcg_testentity_.jmcg_timetakenutc));
+
+            //change start and verify updated
+            testRecord.SetField(Fields.jmcg_testentity_.jmcg_timetakenstartutc, tuesdayStart);
+            testRecord = UpdateFieldsAndRetreive(testRecord, Fields.jmcg_testentity_.jmcg_timetakenstartutc);
+            Assert.AreEqual(15, testRecord.GetInt(Fields.jmcg_testentity_.jmcg_timetakenutc));
+        }
+
+        [TestMethod]
         public void CalculatedFieldsAddTimeTests()
         {
             DeleteAllCalculatedFields();

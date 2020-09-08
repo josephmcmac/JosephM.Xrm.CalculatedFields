@@ -1,10 +1,5 @@
 ﻿using JosephM.Xrm.CalculatedFields.Plugins.Xrm;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
-using Schema;
-using System;
-using System.IO;
-using System.Web.UI.WebControls;
-using System.Xml;
 
 namespace JosephM.Xrm.CalculatedFields.Plugins.Test
 {
