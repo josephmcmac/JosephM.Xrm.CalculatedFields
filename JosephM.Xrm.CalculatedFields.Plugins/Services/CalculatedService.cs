@@ -165,39 +165,42 @@ namespace JosephM.Xrm.CalculatedFields.Plugins.Services
                             {
                                 var spanEndLocal = LocalisationService.ConvertToTargetTime(timeSlot.End.Value);
                                 var isPublicHoliday = getIsPublicHoliday(spanEndLocal);
-                                if (isNegative)
+                                if (!isPublicHoliday)
                                 {
-                                    while (somewhereInTimeUtc > timeSlot.End.Value)
+                                    if (isNegative)
                                     {
-                                        somewhereInTimeUtc = somewhereInTimeUtc.AddMinutes(-1);
-                                    }
-                                    while (somewhereInTimeUtc > timeSlot.Start.Value)
-                                    {
-                                        somewhereInTimeUtc = somewhereInTimeUtc.AddMinutes(-1);
-                                        minutesRemaining--;
-                                        if (minutesRemaining <= 0)
+                                        while (somewhereInTimeUtc > timeSlot.End.Value)
                                         {
-                                            return dateAddTo.Kind == DateTimeKind.Utc
-                                                ? somewhereInTimeUtc
-                                                : LocalisationService.ConvertToTargetTime(somewhereInTimeUtc);
+                                            somewhereInTimeUtc = somewhereInTimeUtc.AddMinutes(-1);
+                                        }
+                                        while (somewhereInTimeUtc > timeSlot.Start.Value)
+                                        {
+                                            somewhereInTimeUtc = somewhereInTimeUtc.AddMinutes(-1);
+                                            minutesRemaining--;
+                                            if (minutesRemaining <= 0)
+                                            {
+                                                return dateAddTo.Kind == DateTimeKind.Utc
+                                                    ? somewhereInTimeUtc
+                                                    : LocalisationService.ConvertToTargetTime(somewhereInTimeUtc);
+                                            }
                                         }
                                     }
-                                }
-                                else
-                                {
-                                    while (somewhereInTimeUtc < timeSlot.Start.Value)
+                                    else
                                     {
-                                        somewhereInTimeUtc = somewhereInTimeUtc.AddMinutes(1);
-                                    }
-                                    while (somewhereInTimeUtc < timeSlot.End.Value)
-                                    {
-                                        somewhereInTimeUtc = somewhereInTimeUtc.AddMinutes(1);
-                                        minutesRemaining--;
-                                        if (minutesRemaining <= 0)
+                                        while (somewhereInTimeUtc < timeSlot.Start.Value)
                                         {
-                                            return dateAddTo.Kind == DateTimeKind.Utc
-                                                ? somewhereInTimeUtc
-                                                : LocalisationService.ConvertToTargetTime(somewhereInTimeUtc);
+                                            somewhereInTimeUtc = somewhereInTimeUtc.AddMinutes(1);
+                                        }
+                                        while (somewhereInTimeUtc < timeSlot.End.Value)
+                                        {
+                                            somewhereInTimeUtc = somewhereInTimeUtc.AddMinutes(1);
+                                            minutesRemaining--;
+                                            if (minutesRemaining <= 0)
+                                            {
+                                                return dateAddTo.Kind == DateTimeKind.Utc
+                                                    ? somewhereInTimeUtc
+                                                    : LocalisationService.ConvertToTargetTime(somewhereInTimeUtc);
+                                            }
                                         }
                                     }
                                 }
@@ -213,13 +216,17 @@ namespace JosephM.Xrm.CalculatedFields.Plugins.Services
 
         public IEnumerable<DateTime> GetPublicHolidays(DateTime startDateUtc, DateTime endDateUtc, Guid calendarId)
         {
-            var vicStartTime = LocalisationService.ConvertToTargetTime(startDateUtc);
-            var vicEndTime = LocalisationService.ConvertToTargetTime(endDateUtc);
-            var myStart = new DateTime(vicStartTime.Year, vicStartTime.Month, vicStartTime.Day, vicStartTime.Hour, vicStartTime.Minute, vicStartTime.Second, DateTimeKind.Utc).AddDays(-2);
-            var myEnd = new DateTime(vicEndTime.Year, vicEndTime.Month, vicEndTime.Day, vicEndTime.Hour, vicEndTime.Minute, vicEndTime.Second, DateTimeKind.Utc).AddDays(2);
+            var vicStartTime = LocalisationService.ConvertToTargetTime(startDateUtc).AddDays(-30);
+            var vicEndTime = LocalisationService.ConvertToTargetTime(endDateUtc).AddDays(30);
+            var myStart = new DateTime(vicStartTime.Year, vicStartTime.Month, vicStartTime.Day, vicStartTime.Hour, vicStartTime.Minute, vicStartTime.Second, DateTimeKind.Utc);
+            var myEnd = new DateTime(vicEndTime.Year, vicEndTime.Month, vicEndTime.Day, vicEndTime.Hour, vicEndTime.Minute, vicEndTime.Second, DateTimeKind.Utc);
 
-            var query = XrmService.BuildQuery(Entities.calendar, null, new[] { new ConditionExpression(Fields.calendar_.calendarid, ConditionOperator.Equal, calendarId) }, null);
-            var join1 = query.AddLink(Entities.calendar, Fields.calendar_.holidayschedulecalendarid, Fields.calendar_.calendarid);
+            var query = XrmService.BuildQuery(Entities.systemuser, new[] { Fields.systemuser_.systemuserid }, null, null);
+            //query.Distinct = false;
+            //XrmService.BuildQuery(Entities.calendar, new[] { Fields.calendar_.calendarid }, new[] {  }, null);
+            var join0 = query.AddLink(Entities.calendar, Fields.systemuser_.systemuserid, Fields.calendar_.createdby);
+            join0.LinkCriteria.AddCondition(new ConditionExpression(Fields.calendar_.calendarid, ConditionOperator.Equal, calendarId));
+            var join1 = join0.AddLink(Entities.calendar, Fields.calendar_.holidayschedulecalendarid, Fields.calendar_.calendarid);
             var join2 = join1.AddLink(Entities.calendarrule, Fields.calendar_.calendarid, Fields.calendarrule_.calendarid);
             join2.EntityAlias = "CR";
             join2.Columns = XrmService.CreateColumnSet(new string[] { Fields.calendarrule_.starttime, Fields.calendarrule_.effectiveintervalend });

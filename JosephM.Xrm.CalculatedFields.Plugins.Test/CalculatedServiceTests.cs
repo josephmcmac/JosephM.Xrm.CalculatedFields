@@ -123,12 +123,61 @@ namespace JosephM.Xrm.CalculatedFields.Plugins.Test
             //work hours
             Assert.AreEqual(64, CalculatedService.GetTimeTaken(fridayEndUtc.AddMinutes(-30), mondayStart.AddMinutes(30), OptionSets.CalculatedField.TimeTakenMeasure.Hours, calendarId));
             Assert.AreEqual(65, CalculatedService.GetTimeTaken(fridayEndUtc.AddMinutes(-45), mondayStart.AddMinutes(45), OptionSets.CalculatedField.TimeTakenMeasure.Hours, calendarId));
+
+            //public holidays
+
+            //easter 2020 = 10/4 -> 13/4
+
+            var dayBeforeEasterNoon = new DateTime(2020, 4, 9, 12, 0, 0, DateTimeKind.Unspecified);
+            var goodFridayNoon = dayBeforeEasterNoon.AddDays(1);
+            var easterMondayNoon = goodFridayNoon.AddDays(3);
+            var easterTuesdayNoon = easterMondayNoon.AddDays(1);
+            var easterTuesdayNoonUtc = LocalisationService.ConvertTargetToUtc(easterTuesdayNoon);
+            var easterTuesdayEnd = new DateTime(2020, 4, easterTuesdayNoon.Day, 17, 0, 0, DateTimeKind.Unspecified);
+            var easterWednesdayNoon = easterTuesdayNoon.AddDays(1);
+            var easterWednesdayNoonUtc = LocalisationService.ConvertTargetToUtc(easterWednesdayNoon);
+            var easterWednesdayStart = new DateTime(2020, 4, easterWednesdayNoon.Day, 8, 30, 0, DateTimeKind.Unspecified);
+            var easterWednesdayStartUtc = LocalisationService.ConvertTargetToUtc(easterWednesdayStart);
+
+            //work days
+            Assert.AreEqual(1, CalculatedService.GetTimeTaken(dayBeforeEasterNoon, easterTuesdayNoon, OptionSets.CalculatedField.TimeTakenMeasure.WorkDays, calendarId));
+            Assert.AreEqual(1, CalculatedService.GetTimeTaken(goodFridayNoon, easterWednesdayNoon, OptionSets.CalculatedField.TimeTakenMeasure.WorkDays, calendarId));
+            Assert.AreEqual(1, CalculatedService.GetTimeTaken(easterMondayNoon, easterWednesdayNoon, OptionSets.CalculatedField.TimeTakenMeasure.WorkDays, calendarId));
+            Assert.AreEqual(1, CalculatedService.GetTimeTaken(easterTuesdayNoon, easterWednesdayNoon, OptionSets.CalculatedField.TimeTakenMeasure.WorkDays, calendarId));
+
+            //work hours
+            Assert.AreEqual(9, CalculatedService.GetTimeTaken(dayBeforeEasterNoon, easterTuesdayNoon.AddMinutes(30), OptionSets.CalculatedField.TimeTakenMeasure.WorkHours, calendarId));
+            Assert.AreEqual(9, CalculatedService.GetTimeTaken(goodFridayNoon, easterWednesdayStart.AddMinutes(30), OptionSets.CalculatedField.TimeTakenMeasure.WorkHours, calendarId));
+            Assert.AreEqual(9, CalculatedService.GetTimeTaken(easterMondayNoon, easterWednesdayStart.AddMinutes(30), OptionSets.CalculatedField.TimeTakenMeasure.WorkHours, calendarId));
+            Assert.AreEqual(9, CalculatedService.GetTimeTaken(easterTuesdayNoon, easterWednesdayNoon.AddMinutes(30), OptionSets.CalculatedField.TimeTakenMeasure.WorkHours, calendarId));
+
+            //work minutes
+            Assert.AreEqual(510, CalculatedService.GetTimeTaken(dayBeforeEasterNoon, easterTuesdayNoon, OptionSets.CalculatedField.TimeTakenMeasure.WorkMinutes, calendarId));
+            Assert.AreEqual(510, CalculatedService.GetTimeTaken(goodFridayNoon, easterTuesdayEnd, OptionSets.CalculatedField.TimeTakenMeasure.WorkMinutes, calendarId));
+            Assert.AreEqual(510, CalculatedService.GetTimeTaken(easterMondayNoon, easterTuesdayEnd, OptionSets.CalculatedField.TimeTakenMeasure.WorkMinutes, calendarId));
+            Assert.AreEqual(510, CalculatedService.GetTimeTaken(easterTuesdayNoon, easterWednesdayNoon, OptionSets.CalculatedField.TimeTakenMeasure.WorkMinutes, calendarId));
+
+            //queens birthday = 8/6
+            var fridayBeforeQueensNoon = new DateTime(2020, 6, 5, 12, 0, 0, DateTimeKind.Unspecified);
+            var dayBeforeQueensNoon = fridayBeforeQueensNoon.AddDays(2);
+            var queensNoon = dayBeforeQueensNoon.AddDays(1);
+            var dayAfterQueensNoon = queensNoon.AddDays(1);
+            var dayAfterAfterQueensNoon = dayAfterQueensNoon.AddDays(1);
+
+            Assert.AreEqual(1, CalculatedService.GetTimeTaken(fridayBeforeQueensNoon, dayAfterQueensNoon, OptionSets.CalculatedField.TimeTakenMeasure.WorkDays, calendarId));
+            Assert.AreEqual(1, CalculatedService.GetTimeTaken(dayBeforeQueensNoon, dayAfterAfterQueensNoon, OptionSets.CalculatedField.TimeTakenMeasure.WorkDays, calendarId));
+            Assert.AreEqual(1, CalculatedService.GetTimeTaken(queensNoon, dayAfterAfterQueensNoon, OptionSets.CalculatedField.TimeTakenMeasure.WorkDays, calendarId));
+            Assert.AreEqual(1, CalculatedService.GetTimeTaken(dayAfterQueensNoon, dayAfterAfterQueensNoon, OptionSets.CalculatedField.TimeTakenMeasure.WorkDays, calendarId));
+
+            //span over easter and queens birthday
+            Assert.AreEqual(61, CalculatedService.GetTimeTaken(dayBeforeEasterNoon.AddDays(-28), easterTuesdayNoon.AddDays(57), OptionSets.CalculatedField.TimeTakenMeasure.WorkDays, calendarId));
         }
 
         [TestMethod]
         public void CalculatedServiceAddTimeTest()
         {
             var calendarId = ServiceCalendarId;
+
             //work days
 
             var wednesdayNoon1 = new DateTime(2020, 7, 29, 12, 0, 0, DateTimeKind.Unspecified);
@@ -232,6 +281,54 @@ namespace JosephM.Xrm.CalculatedFields.Plugins.Test
             //work minutes
             Assert.AreEqual(mondayStart.AddMinutes(15), LocalisationService.ConvertToTargetTime(CalculatedService.AddTime(fridayEndUtc.AddMinutes(-15), OptionSets.CalculatedField.TimeType.WorkMinutes, 30, calendarId)));
             Assert.AreEqual(fridayEnd.AddMinutes(-15), LocalisationService.ConvertToTargetTime(CalculatedService.AddTime(mondayStartUtc.AddMinutes(15), OptionSets.CalculatedField.TimeType.WorkMinutes, -30, calendarId)));
+
+            //public holidays
+
+            //easter 2020 = 10/4 -> 13/4
+
+            var dayBeforeEasterNoon = new DateTime(2020, 4, 9, 12, 0, 0, DateTimeKind.Unspecified);
+            var goodFridayNoon = dayBeforeEasterNoon.AddDays(1);
+            var easterMondayNoon = goodFridayNoon.AddDays(3);
+            var easterTuesdayNoon = easterMondayNoon.AddDays(1);
+            var easterTuesdayNoonUtc = LocalisationService.ConvertTargetToUtc(easterTuesdayNoon);
+            var easterTuesdayEnd = new DateTime(2020, 4, easterTuesdayNoon.Day, 17, 0, 0, DateTimeKind.Unspecified);
+            var easterWednesdayNoon = easterTuesdayNoon.AddDays(1);
+            var easterWednesdayNoonUtc = LocalisationService.ConvertTargetToUtc(easterWednesdayNoon);
+            var easterWednesdayStart = new DateTime(2020, 4, easterWednesdayNoon.Day, 8, 30, 0, DateTimeKind.Unspecified);
+            var easterWednesdayStartUtc = LocalisationService.ConvertTargetToUtc(easterWednesdayStart);
+
+            //work days
+            Assert.AreEqual(easterTuesdayNoon, LocalisationService.ConvertToTargetTime(CalculatedService.AddTime(dayBeforeEasterNoon, OptionSets.CalculatedField.TimeType.WorkDays, 1, calendarId)));
+            Assert.AreEqual(easterWednesdayNoon, LocalisationService.ConvertToTargetTime(CalculatedService.AddTime(goodFridayNoon, OptionSets.CalculatedField.TimeType.WorkDays, 1, calendarId)));
+            Assert.AreEqual(easterWednesdayNoon, LocalisationService.ConvertToTargetTime(CalculatedService.AddTime(easterMondayNoon, OptionSets.CalculatedField.TimeType.WorkDays, 1, calendarId)));
+            Assert.AreEqual(easterWednesdayNoon, LocalisationService.ConvertToTargetTime(CalculatedService.AddTime(easterTuesdayNoon, OptionSets.CalculatedField.TimeType.WorkDays, 1, calendarId)));
+
+            //work hours
+            Assert.AreEqual(easterTuesdayNoon.AddMinutes(30), LocalisationService.ConvertToTargetTime(CalculatedService.AddTime(dayBeforeEasterNoon, OptionSets.CalculatedField.TimeType.WorkHours, 9, calendarId)));
+            Assert.AreEqual(easterWednesdayStart.AddMinutes(30), LocalisationService.ConvertToTargetTime(CalculatedService.AddTime(goodFridayNoon, OptionSets.CalculatedField.TimeType.WorkHours, 9, calendarId)));
+            Assert.AreEqual(easterWednesdayStart.AddMinutes(30), LocalisationService.ConvertToTargetTime(CalculatedService.AddTime(easterMondayNoon, OptionSets.CalculatedField.TimeType.WorkHours, 9, calendarId)));
+            Assert.AreEqual(easterWednesdayNoon.AddMinutes(30), LocalisationService.ConvertToTargetTime(CalculatedService.AddTime(easterTuesdayNoon, OptionSets.CalculatedField.TimeType.WorkHours, 9, calendarId)));
+
+            //work minutes
+            Assert.AreEqual(easterTuesdayNoon, LocalisationService.ConvertToTargetTime(CalculatedService.AddTime(dayBeforeEasterNoon, OptionSets.CalculatedField.TimeType.WorkMinutes, 510, calendarId)));
+            Assert.AreEqual(easterTuesdayEnd, LocalisationService.ConvertToTargetTime(CalculatedService.AddTime(goodFridayNoon, OptionSets.CalculatedField.TimeType.WorkMinutes, 510, calendarId)));
+            Assert.AreEqual(easterTuesdayEnd, LocalisationService.ConvertToTargetTime(CalculatedService.AddTime(easterMondayNoon, OptionSets.CalculatedField.TimeType.WorkMinutes, 510, calendarId)));
+            Assert.AreEqual(easterWednesdayNoon, LocalisationService.ConvertToTargetTime(CalculatedService.AddTime(easterTuesdayNoon, OptionSets.CalculatedField.TimeType.WorkMinutes, 510, calendarId)));
+
+            //queens birthday = 8/6
+            var fridayBeforeQueensNoon = new DateTime(2020, 6, 5, 12, 0, 0, DateTimeKind.Unspecified);
+            var dayBeforeQueensNoon = fridayBeforeQueensNoon.AddDays(2);
+            var queensNoon = dayBeforeQueensNoon.AddDays(1);
+            var dayAfterQueensNoon = queensNoon.AddDays(1);
+            var dayAfterAfterQueensNoon = dayAfterQueensNoon.AddDays(1);
+
+            Assert.AreEqual(dayAfterQueensNoon, LocalisationService.ConvertToTargetTime(CalculatedService.AddTime(fridayBeforeQueensNoon, OptionSets.CalculatedField.TimeType.WorkDays, 1, calendarId)));
+            Assert.AreEqual(dayAfterAfterQueensNoon, LocalisationService.ConvertToTargetTime(CalculatedService.AddTime(dayBeforeQueensNoon, OptionSets.CalculatedField.TimeType.WorkDays, 1, calendarId)));
+            Assert.AreEqual(dayAfterAfterQueensNoon, LocalisationService.ConvertToTargetTime(CalculatedService.AddTime(queensNoon, OptionSets.CalculatedField.TimeType.WorkDays, 1, calendarId)));
+            Assert.AreEqual(dayAfterAfterQueensNoon, LocalisationService.ConvertToTargetTime(CalculatedService.AddTime(dayAfterQueensNoon, OptionSets.CalculatedField.TimeType.WorkDays, 1, calendarId)));
+
+            //span over easter and queens birthday
+            Assert.AreEqual(easterTuesdayNoon.AddDays(57), LocalisationService.ConvertToTargetTime(CalculatedService.AddTime(dayBeforeEasterNoon.AddDays(-28), OptionSets.CalculatedField.TimeType.WorkDays, 61, calendarId)));
         }
     }
 }
