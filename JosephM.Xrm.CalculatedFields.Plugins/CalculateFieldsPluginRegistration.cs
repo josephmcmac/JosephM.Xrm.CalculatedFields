@@ -41,9 +41,34 @@ namespace JosephM.Xrm.CalculatedFields.Plugins
                     var xrmService = new XrmService(factory.CreateOrganizationService(context.UserId), new LogController());
                     var calculatedService = new CalculatedService(xrmService, new CalculatedSettings(xrmService), new LocalisationService(new LocalisationSettings(xrmService)));
 
-                    Configs = calculatedService.DeserialiseEntities(_unsecureConfiguration)
+                    var loadedToConfigs = calculatedService.DeserialiseEntities(_unsecureConfiguration)
                         .Select(calculatedService.LoadCalculatedFieldConfig)
                         .ToArray();
+
+                    var ordered = new List<CalculatedFieldsConfig>();
+                    foreach(var config in loadedToConfigs)
+                    {
+                        var i = 0;
+                        foreach(var added in ordered.ToArray())
+                        {
+                            //ensure we add before this item if our target is one of its dependent fields
+                            var thisTargetField = config.CalculatedFieldEntity.GetStringField(Fields.jmcg_calculatedfield_.jmcg_field);
+                            var dependentFields = calculatedService.GetDependencyFields(added);
+                            if(dependentFields.Contains(thisTargetField))
+                            {
+                                ordered.Insert(i, config);
+                                break;
+                            }
+                            i++;
+                        }
+                        if(!ordered.Contains(config))
+                        {
+                            ordered.Add(config);
+                        }
+                    }
+
+                    Configs = ordered;
+
                     _loadedConfig = true;
                 }
             }

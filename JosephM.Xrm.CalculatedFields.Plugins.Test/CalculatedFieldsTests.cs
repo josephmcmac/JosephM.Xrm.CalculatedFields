@@ -14,6 +14,69 @@ namespace JosephM.Xrm.CalculatedFields.Plugins.Test
     public class CalculatedFieldsTests : CalculatedXrmTest
     {
         [TestMethod]
+        public void CalculatedFieldsOrderDependeciesTests()
+        {
+            DeleteAllCalculatedFields();
+
+            //string with created on
+            CreateTestRecord(Entities.jmcg_calculatedfield, new Dictionary<string, object>
+                {
+                    { Fields.jmcg_calculatedfield_.jmcg_type, new OptionSetValue(OptionSets.CalculatedField.Type.Concatenate) },
+                    { Fields.jmcg_calculatedfield_.jmcg_name, Fields.jmcg_testentity_.jmcg_string },
+                    { Fields.jmcg_calculatedfield_.jmcg_entitytype, Entities.jmcg_testentity },
+                    { Fields.jmcg_calculatedfield_.jmcg_field, Fields.jmcg_testentity_.jmcg_string },
+                    { Fields.jmcg_calculatedfield_.jmcg_concatenatefield1, Fields.jmcg_testentity_.createdon },
+                    { Fields.jmcg_calculatedfield_.jmcg_separatortype, new OptionSetValue(OptionSets.CalculatedField.SeparatorType.Space) },
+                });
+
+            //create name with string (created on), time taken and jmcg_dateaddresultutc
+            CreateTestRecord(Entities.jmcg_calculatedfield, new Dictionary<string, object>
+                {
+                    { Fields.jmcg_calculatedfield_.jmcg_type, new OptionSetValue(OptionSets.CalculatedField.Type.Concatenate) },
+                    { Fields.jmcg_calculatedfield_.jmcg_name, Fields.jmcg_testentity_.jmcg_name },
+                    { Fields.jmcg_calculatedfield_.jmcg_entitytype, Entities.jmcg_testentity },
+                    { Fields.jmcg_calculatedfield_.jmcg_field, Fields.jmcg_testentity_.jmcg_name },
+                    { Fields.jmcg_calculatedfield_.jmcg_timetakenmeasure, new OptionSetValue(OptionSets.CalculatedField.TimeTakenMeasure.WorkMinutes) },
+                    { Fields.jmcg_calculatedfield_.jmcg_concatenatefield1, Fields.jmcg_testentity_.jmcg_string },
+                    { Fields.jmcg_calculatedfield_.jmcg_concatenatefield2, Fields.jmcg_testentity_.jmcg_timetakenutc },
+                    { Fields.jmcg_calculatedfield_.jmcg_concatenatefield3, Fields.jmcg_testentity_.jmcg_dateaddresultutc },
+                    { Fields.jmcg_calculatedfield_.jmcg_separatortype, new OptionSetValue(OptionSets.CalculatedField.SeparatorType.Space) },
+                });
+
+            //create time taken field = created on -> date add result (10)
+            CreateTestRecord(Entities.jmcg_calculatedfield, new Dictionary<string, object>
+                {
+                    { Fields.jmcg_calculatedfield_.jmcg_type, new OptionSetValue(OptionSets.CalculatedField.Type.TimeTaken) },
+                    { Fields.jmcg_calculatedfield_.jmcg_name, Fields.jmcg_testentity_.jmcg_timetakenutc },
+                    { Fields.jmcg_calculatedfield_.jmcg_entitytype, Entities.jmcg_testentity },
+                    { Fields.jmcg_calculatedfield_.jmcg_field, Fields.jmcg_testentity_.jmcg_timetakenutc },
+                    { Fields.jmcg_calculatedfield_.jmcg_timetakenmeasure, new OptionSetValue(OptionSets.CalculatedField.TimeTakenMeasure.Minutes) },
+                    { Fields.jmcg_calculatedfield_.jmcg_timetakenstartfield, Fields.jmcg_testentity_.createdon },
+                    { Fields.jmcg_calculatedfield_.jmcg_timetakenendfield, Fields.jmcg_testentity_.jmcg_dateaddresultutc },
+                    { Fields.jmcg_calculatedfield_.jmcg_calendarid, ServiceCalendarId.ToString() },
+                });
+
+            //create add time result = created on + 10 minutes
+            CreateTestRecord(Entities.jmcg_calculatedfield, new Dictionary<string, object>
+                {
+                    { Fields.jmcg_calculatedfield_.jmcg_type, new OptionSetValue(OptionSets.CalculatedField.Type.AddTime) },
+                    { Fields.jmcg_calculatedfield_.jmcg_name, Fields.jmcg_testentity_.jmcg_dateaddresultutc },
+                    { Fields.jmcg_calculatedfield_.jmcg_entitytype, Entities.jmcg_testentity },
+                    { Fields.jmcg_calculatedfield_.jmcg_field, Fields.jmcg_testentity_.jmcg_dateaddresultutc },
+                    { Fields.jmcg_calculatedfield_.jmcg_timetype, new OptionSetValue(OptionSets.CalculatedField.TimeType.Minutes) },
+                    { Fields.jmcg_calculatedfield_.jmcg_timeamount, 10 },
+                    { Fields.jmcg_calculatedfield_.jmcg_addtimetofield, Fields.jmcg_testentity_.createdon }
+                });
+
+            var testRecord = CreateTestRecord(Entities.jmcg_testentity);
+            var name = testRecord.GetStringField(Fields.jmcg_testentity_.jmcg_name);
+            Assert.IsNotNull(testRecord.GetField(Fields.jmcg_testentity_.jmcg_string));
+            Assert.IsNotNull(testRecord.GetField(Fields.jmcg_testentity_.jmcg_dateaddresultutc));
+            Assert.IsNotNull(testRecord.GetField(Fields.jmcg_testentity_.jmcg_timetakenutc));
+            Assert.AreEqual(XrmService.GetFieldAsDisplayString(Entities.jmcg_testentity, Fields.jmcg_testentity_.jmcg_string, testRecord.GetField(Fields.jmcg_testentity_.jmcg_string), LocalisationService) + " 10 " + XrmService.GetFieldAsDisplayString(Entities.jmcg_testentity, Fields.jmcg_testentity_.jmcg_dateaddresultutc, testRecord.GetField(Fields.jmcg_testentity_.jmcg_dateaddresultutc), LocalisationService), name);
+        }
+
+        [TestMethod]
         public void CalculatedFieldsTimeTakenTests()
         {
             DeleteAllCalculatedFields();
