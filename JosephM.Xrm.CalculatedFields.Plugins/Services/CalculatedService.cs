@@ -255,13 +255,12 @@ namespace JosephM.Xrm.CalculatedFields.Plugins.Services
 
         public void RefreshPluginRegistrations(Guid changedEntityId, bool isCurrentlyActive)
         {
-            //todo delete, inactive
             var activeCalculatedFields = XrmService.RetrieveAllAndConditions(Entities.jmcg_calculatedfield, new[]
             {
                 new ConditionExpression(Fields.jmcg_calculatedfield_.statecode, ConditionOperator.Equal, OptionSets.CalculatedField.Status.Active)
             });
 
-            IEnumerable<Entity> sdkMessageProcessingSteps = GetCalculateFieldsEvents();
+            var sdkMessageProcessingSteps = GetCalculateFieldsEvents();
 
             var removeIfNotUpdated = !isCurrentlyActive
                 ? sdkMessageProcessingSteps
@@ -481,7 +480,7 @@ namespace JosephM.Xrm.CalculatedFields.Plugins.Services
         }
 
         public Entity GetPluginFilter(string entityType, string message)
- 
+
         {
             var pluginFilters = XrmService.RetrieveAllAndConditions(Entities.sdkmessagefilter, new[]
             {

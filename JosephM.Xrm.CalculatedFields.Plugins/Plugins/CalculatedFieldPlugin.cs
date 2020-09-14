@@ -174,16 +174,17 @@ namespace JosephM.Xrm.CalculatedFields.Plugins.Plugins
         private bool ConfigFieldChanging()
         {
             return TargetEntity
-                                .Attributes
-                                .Keys
-                                .Where(k => k.StartsWith("jmcg"))
-                                .Except(new[]
-                                {
-                        Fields.jmcg_calculatedfield_.jmcg_recalculateall,
-                        Fields.jmcg_calculatedfield_.jmcg_isrecalculating,
-                        Fields.jmcg_calculatedfield_.jmcg_errorrecalculating,
-                        Fields.jmcg_calculatedfield_.jmcg_lastrecalculationcreatedate
-                                }).Any(FieldChanging);
+                .Attributes
+                .Keys
+                .Where(k => k == Fields.jmcg_calculatedfield_.statecode
+                        || k.StartsWith("jmcg"))
+                            .Except(new[]
+                            {
+                    Fields.jmcg_calculatedfield_.jmcg_recalculateall,
+                    Fields.jmcg_calculatedfield_.jmcg_isrecalculating,
+                    Fields.jmcg_calculatedfield_.jmcg_errorrecalculating,
+                    Fields.jmcg_calculatedfield_.jmcg_lastrecalculationcreatedate
+                            }).Any(FieldChanging);
         }
     }
 }

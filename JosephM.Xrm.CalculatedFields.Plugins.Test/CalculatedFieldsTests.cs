@@ -1512,6 +1512,14 @@ namespace JosephM.Xrm.CalculatedFields.Plugins.Test
             calculateFieldsEvents = CalculatedService.GetCalculateFieldsEvents();
             Assert.AreEqual(13, calculateFieldsEvents.Count());
 
+            XrmService.SetState(twoToOneRollups[1].LogicalName, twoToOneRollups[1].Id, OptionSets.CalculatedField.Status.Inactive);
+            calculateFieldsEvents = CalculatedService.GetCalculateFieldsEvents();
+            Assert.AreEqual(10, calculateFieldsEvents.Count());
+
+            XrmService.SetState(twoToOneRollups[1].LogicalName, twoToOneRollups[1].Id, OptionSets.CalculatedField.Status.Active);
+            calculateFieldsEvents = CalculatedService.GetCalculateFieldsEvents();
+            Assert.AreEqual(13, calculateFieldsEvents.Count());
+
             XrmService.Delete(twoToOneRollups[1]);
             calculateFieldsEvents = CalculatedService.GetCalculateFieldsEvents();
             Assert.AreEqual(10, calculateFieldsEvents.Count());
