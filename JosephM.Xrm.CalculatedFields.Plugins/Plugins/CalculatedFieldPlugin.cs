@@ -165,7 +165,8 @@ namespace JosephM.Xrm.CalculatedFields.Plugins.Plugins
                     || ConfigFieldChanging();
                 if (refreshSdkMessageProcessingSteps)
                 {
-                    var isActive = GetOptionSet(Fields.jmcg_calculatedfield_.statecode) == OptionSets.CalculatedField.Status.Active;
+                    var isActive = IsMessage(PluginMessage.Create)
+                        || GetOptionSet(Fields.jmcg_calculatedfield_.statecode) == OptionSets.CalculatedField.Status.Active;
                     CalculatedService.RefreshPluginRegistrations(TargetId, isActive);
                 }
             }
