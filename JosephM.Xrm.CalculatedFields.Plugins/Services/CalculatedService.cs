@@ -873,7 +873,7 @@ namespace JosephM.Xrm.CalculatedFields.Plugins.Services
                     }
                 default:
                     {
-                        throw new InvalidPluginExecutionException($"Order Type not implemented for option value {optionValue}");
+                        return OrderType.Ascending;
                     }
             }
         }
