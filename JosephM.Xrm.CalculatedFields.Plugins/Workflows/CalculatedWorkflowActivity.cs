@@ -39,7 +39,7 @@ namespace JosephM.Xrm.CalculatedFields.Plugins.Workflows
             {
                 if (_localisationService == null)
                 {
-                    _localisationService = new LocalisationService(new LocalisationSettings(XrmService));
+                    _localisationService = new LocalisationService(new LocalisationSettings(XrmService, InitiatingUserId));
                 }
                 return _localisationService;
             }

@@ -79,7 +79,7 @@ namespace JosephM.Xrm.CalculatedFields.Plugins.Test
             get
             {
                 if (_localisationService == null)
-                    _localisationService = new LocalisationService(new LocalisationSettings(XrmService));
+                    _localisationService = new LocalisationService(new LocalisationSettings(XrmService, CurrentUserId));
                 return _localisationService;
             }
         }

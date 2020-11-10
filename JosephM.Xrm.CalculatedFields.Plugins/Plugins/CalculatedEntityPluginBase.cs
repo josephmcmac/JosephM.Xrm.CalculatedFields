@@ -50,7 +50,7 @@ namespace JosephM.Xrm.CalculatedFields.Plugins.Plugins
             {
                 if (_localisationService == null)
                 {
-                    _localisationService = new LocalisationService(new LocalisationSettings(XrmService));
+                    _localisationService = new LocalisationService(new LocalisationSettings(XrmService, Context.InitiatingUserId));
                 }
                 return _localisationService;
             }

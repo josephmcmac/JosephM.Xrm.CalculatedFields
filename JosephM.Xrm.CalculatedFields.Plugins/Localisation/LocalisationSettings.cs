@@ -8,9 +8,10 @@ namespace JosephM.Xrm.CalculatedFields.Plugins.Localisation
 {
     public class LocalisationSettings : ILocalisationSettings
     {
-        public LocalisationSettings(XrmService xrmService)
+        public LocalisationSettings(XrmService xrmService, Guid userId)
         {
             XrmService = xrmService;
+            UserId = userId;
         }
 
         public string TargetTimeZoneId
@@ -28,14 +29,13 @@ namespace JosephM.Xrm.CalculatedFields.Plugins.Localisation
             {
                 if (!_userTimeZoneCode.HasValue)
                 {
-                    var whoAmI = XrmService.WhoAmI();
                     var userSettingsQuery = new QueryExpression(Entities.usersettings);
                     userSettingsQuery.ColumnSet = new ColumnSet(Fields.usersettings_.timezonecode);
                     var userJoin = userSettingsQuery.AddLink(Entities.systemuser, Fields.usersettings_.systemuserid, Fields.systemuser_.systemuserid);
-                    userJoin.LinkCriteria.AddCondition(Fields.systemuser_.systemuserid, ConditionOperator.EqualUserId);
+                    userJoin.LinkCriteria.AddCondition(Fields.systemuser_.systemuserid, ConditionOperator.Equal, UserId);
                     var userSettings = XrmService.RetrieveFirst(userSettingsQuery);
                     if (userSettings == null)
-                        throw new NullReferenceException($"Error getting {XrmService.GetEntityDisplayName(Entities.usersettings)} for user: {whoAmI}");
+                        throw new NullReferenceException($"Error getting {XrmService.GetEntityDisplayName(Entities.usersettings)} for user: {UserId}");
                     if (userSettings.GetField(Fields.usersettings_.timezonecode) == null)
                         throw new NullReferenceException($"Error {XrmService.GetFieldLabel(Fields.usersettings_.timezonecode, Entities.usersettings)} is empty in the {XrmService.GetEntityDisplayName(Entities.usersettings)} record");
 
@@ -60,5 +60,6 @@ namespace JosephM.Xrm.CalculatedFields.Plugins.Localisation
         }
 
         public XrmService XrmService { get; private set; }
+        public Guid UserId { get; }
     }
 }

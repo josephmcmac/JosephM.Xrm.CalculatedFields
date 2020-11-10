@@ -39,7 +39,7 @@ namespace JosephM.Xrm.CalculatedFields.Plugins
                     var context = (IPluginExecutionContext)serviceProvider.GetService(typeof(IPluginExecutionContext));
 
                     var xrmService = new XrmService(factory.CreateOrganizationService(context.UserId), new LogController());
-                    var calculatedService = new CalculatedService(xrmService, new CalculatedSettings(xrmService), new LocalisationService(new LocalisationSettings(xrmService)));
+                    var calculatedService = new CalculatedService(xrmService, new CalculatedSettings(xrmService), new LocalisationService(new LocalisationSettings(xrmService, context.InitiatingUserId)));
 
                     var loadedToConfigs = calculatedService.DeserialiseEntities(_unsecureConfiguration)
                         .Select(calculatedService.LoadCalculatedFieldConfig)
