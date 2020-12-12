@@ -51,7 +51,7 @@ CalculatedJs.RunOnLoad = function () {
     calculatedPageUtility.CommonForm(CalculatedJs.RunOnChange, CalculatedJs.RunOnSave);
 
     CalculatedJs.PopulateTypeLists(["jmcg_entitytypeselectionfield", "jmcg_entitytyperolledupselectionfield"]);
-    CalculatedJs.AddFieldSelectionPicklist(null, "jmcg_entitytype", "jmcg_fieldselectionfield", "jmcg_field", ["String", "Integer", "Money", "Decimal", "Double", "Boolean", "Memo"]);
+    CalculatedJs.AddFieldSelectionPicklist(null, "jmcg_entitytype", "jmcg_fieldselectionfield", "jmcg_field", ["String", "Integer", "Money", "Decimal", "Double", "Boolean", "Memo", "DateTime"]);
     CalculatedJs.AddFieldSelectionPicklist(CalculatedJs.options.Type.Rollup, "jmcg_entitytyperolledup", "jmcg_fieldreferencingselectionfield", "jmcg_fieldreferencing",["Lookup", "Customer", "Owner"]);
     CalculatedJs.AddFieldSelectionPicklist(CalculatedJs.options.Type.Rollup, "jmcg_entitytyperolledup", "jmcg_fieldrolledupselectionfield", "jmcg_fieldrolledup", ["String", "Integer", "Money", "Decimal", "Double", "Boolean", "UniqueIdentifier", "Lookup", "Memo", "DateTime", "Lookup", "Customer", "Owner" ]);
     CalculatedJs.AddFieldSelectionPicklist(CalculatedJs.options.Type.Rollup, "jmcg_entitytyperolledup", "jmcg_orderrollupbyfieldselectionfield", "jmcg_orderrollupbyfield", null);
