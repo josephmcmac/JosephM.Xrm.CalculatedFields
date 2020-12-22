@@ -122,9 +122,12 @@
     <Compile Include="SharePoint\GetFolderResponse.cs" />
     <Compile Include="SharePoint\ISharePointSettings.cs" />
     <Compile Include="SharePoint\SharePointService.cs" />
+    <Compile Include="Workflows\AddWeekDays.cs" />
     <Compile Include="Workflows\CalculatedFieldsRecalculateAllWorkflow.cs" />
     <Compile Include="Workflows\CalculatedFieldsStartNewRecalculateInstance.cs" />
     <Compile Include="Workflows\CalculatedWorkflowActivity.cs" />
+    <Compile Include="Workflows\GetLastOfMonth.cs" />
+    <Compile Include="Workflows\GetFirstOfNextMonth.cs" />
     <Compile Include="Xrm\DeviceIdManager.cs" />
     <Compile Include="Xrm\ExceptionExtentions.cs" />
     <Compile Include="Xrm\IXrmConfiguration.cs" />

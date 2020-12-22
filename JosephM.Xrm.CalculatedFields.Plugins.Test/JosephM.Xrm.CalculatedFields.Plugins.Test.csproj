@@ -73,6 +73,9 @@
     <Compile Include="Debug.cs" />
     <Compile Include="CalculatedXrmTest.cs" />
     <Compile Include="DebugUserInterface.cs" />
+    <Compile Include="AddWeekDaysTests.cs" />
+    <Compile Include="GetLastOfMonthTests.cs" />
+    <Compile Include="GetFirstOfNextMonthTests.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="XrmTest.cs" />
   </ItemGroup>
