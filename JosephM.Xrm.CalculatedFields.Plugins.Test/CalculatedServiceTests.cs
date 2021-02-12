@@ -28,6 +28,8 @@ namespace JosephM.Xrm.CalculatedFields.Plugins.Test
             var tuesdayNoonUtc = LocalisationService.ConvertTargetToUtc(tuesdayNoon);
             var wednesdayNoon2 = new DateTime(2020, 8, 5, 12, 0, 0, DateTimeKind.Unspecified);
 
+            var nextSaturdayNoon = new DateTime(2020, 8, 8, 12, 0, 0, DateTimeKind.Unspecified);
+
             var thursdayAm = new DateTime(2020, 7, 30, 3, 0, 0, DateTimeKind.Unspecified);
             var thursdayAmUtc = LocalisationService.ConvertTargetToUtc(thursdayAm);
             var fridayAm = new DateTime(2020, 7, 31, 3, 0, 0, DateTimeKind.Unspecified);
@@ -60,6 +62,9 @@ namespace JosephM.Xrm.CalculatedFields.Plugins.Test
             var wednesdayStart = new DateTime(2020, 8, 5, 8, 30, 0, DateTimeKind.Unspecified);
 
             //work days
+
+            //saturday to saturday
+            Assert.AreEqual(5, CalculatedService.GetTimeTaken(saturdayNoon, nextSaturdayNoon, OptionSets.CalculatedField.TimeTakenMeasure.WorkDays, ServiceCalendarId));
 
             //thursday noon ++
             Assert.AreEqual(0, CalculatedService.GetTimeTaken(thursdayNoon, thursdayNoon, OptionSets.CalculatedField.TimeTakenMeasure.WorkDays, ServiceCalendarId));

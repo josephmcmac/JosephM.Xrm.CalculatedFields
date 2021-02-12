@@ -719,9 +719,23 @@ namespace JosephM.Xrm.CalculatedFields.Plugins.Services
                                     }
                                 }
                             }
-                            return daysCounted.Any()
-                                ? daysCounted.Count - 1
-                                : 0;
+                            if(!daysCounted.Any())
+                            {
+                                return 0;
+                            }
+                            else
+                            {
+                                var startDayTuple = new Tuple<int, int, int>(startTimeLocal.Year, startTimeLocal.Month, startTimeLocal.Day);
+                                var endDayTuple = new Tuple<int, int, int>(endTimeLocal.Year, endTimeLocal.Month, endTimeLocal.Day);
+                                if (!daysCounted.Contains(startDayTuple) && !daysCounted.Contains(endDayTuple))
+                                {
+                                    return daysCounted.Count;
+                                }
+                                else
+                                {
+                                    return daysCounted.Count - 1;
+                                }
+                            }
                         }
                     }
             }
