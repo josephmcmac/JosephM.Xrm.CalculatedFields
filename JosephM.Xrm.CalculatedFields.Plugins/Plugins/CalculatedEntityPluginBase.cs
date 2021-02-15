@@ -2,6 +2,7 @@
 using JosephM.Xrm.CalculatedFields.Plugins.Services;
 using JosephM.Xrm.CalculatedFields.Plugins.SharePoint;
 using JosephM.Xrm.CalculatedFields.Plugins.Xrm;
+using System;
 
 namespace JosephM.Xrm.CalculatedFields.Plugins.Plugins
 {
@@ -50,7 +51,24 @@ namespace JosephM.Xrm.CalculatedFields.Plugins.Plugins
             {
                 if (_localisationService == null)
                 {
-                    _localisationService = new LocalisationService(new LocalisationSettings(XrmService, Context.InitiatingUserId));
+                    Guid? userId = null;
+                    if (IsMessage(PluginMessage.Create))
+                    {
+                        userId = GetLookupGuid("createdonbehalfby");
+                        if (!userId.HasValue)
+                        {
+                            userId = GetLookupGuid("createdby");
+                        }
+                    }
+                    else if (IsMessage(PluginMessage.Update))
+                    {
+                        userId = GetLookupGuid("modifiedby");
+                    }
+                    if(!userId.HasValue)
+                    {
+                        userId = Context.InitiatingUserId;
+                    }
+                    _localisationService = new LocalisationService(new LocalisationSettings(XrmService, userId.Value));
                 }
                 return _localisationService;
             }
