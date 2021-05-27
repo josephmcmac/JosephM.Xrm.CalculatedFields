@@ -47,6 +47,7 @@
     <Content Include="jmcg_cf_jquery.js" />
     <Content Include="jmcg_cf_pageutility.js" />
     <Content Include="jmcg_cf_webserviceutility.js" />
+    <Content Include="jmcg_cf_configuration.html" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>
