@@ -546,6 +546,15 @@ namespace JosephM.Xrm.CalculatedFields.Plugins.Services
             {
                 case OptionSets.CalculatedField.Type.Concatenate:
                     {
+                        var ignoreValuesString = calculatedConfig.CalculatedFieldEntity.GetStringField(Fields.jmcg_calculatedfield_.jmcg_concatenateskipvalues);
+                        var ignoreValues = string.IsNullOrWhiteSpace(ignoreValuesString)
+                            ? new string[0]
+                            : ignoreValuesString
+                                .Split(';')
+                                .Where(s => !string.IsNullOrWhiteSpace(s))
+                                .Select(s => s.Trim().ToLower())
+                                .ToArray();
+
                         var includeEmpty = calculatedConfig.CalculatedFieldEntity.GetBoolean(Fields.jmcg_calculatedfield_.jmcg_includeifempty);
                         var concatValues = new List<string>();
                         foreach (var concatField in _concatenateFiels)
@@ -554,7 +563,8 @@ namespace JosephM.Xrm.CalculatedFields.Plugins.Services
                             if (thisField != null)
                             {
                                 var displayValue = XrmService.GetFieldAsDisplayString(entityTypeWithCalculation, thisField, getField(thisField), LocalisationService, funcOrFormat: calculatedConfig.CalculatedFieldEntity.GetStringField(concatField.FormatFieldName));
-                                if (includeEmpty || !string.IsNullOrWhiteSpace(displayValue))
+                                if (includeEmpty || !string.IsNullOrWhiteSpace(displayValue)
+                                    && !(displayValue != null && ignoreValues.Contains(displayValue.ToLower())))
                                 {
                                     var prependString = calculatedConfig.CalculatedFieldEntity.GetStringField(concatField.PrependStringFieldName);
                                     if(calculatedConfig.CalculatedFieldEntity.GetBoolean(concatField.PrependStringSpacedFieldName))
@@ -1034,22 +1044,3 @@ namespace JosephM.Xrm.CalculatedFields.Plugins.Services
         };
     }
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

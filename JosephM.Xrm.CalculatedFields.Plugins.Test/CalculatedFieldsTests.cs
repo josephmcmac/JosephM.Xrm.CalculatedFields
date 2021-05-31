@@ -1193,6 +1193,35 @@ namespace JosephM.Xrm.CalculatedFields.Plugins.Test
         }
 
         [TestMethod]
+        public void CalculatedFieldsConcatenateSkipValuesPluginTest()
+        {
+            DeleteAllCalculatedFields();
+
+            var concatenator = CreateTestRecord(Entities.jmcg_calculatedfield, new Dictionary<string, object>
+                {
+                    { Fields.jmcg_calculatedfield_.jmcg_type, new OptionSetValue(OptionSets.CalculatedField.Type.Concatenate) },
+                    { Fields.jmcg_calculatedfield_.jmcg_name, "Test Concatenatation" },
+                    { Fields.jmcg_calculatedfield_.jmcg_entitytype, Entities.jmcg_testentity },
+                    { Fields.jmcg_calculatedfield_.jmcg_field, Fields.jmcg_testentity_.jmcg_name },
+                    { Fields.jmcg_calculatedfield_.jmcg_concatenatefield1, Fields.jmcg_testentity_.jmcg_integer },
+                    { Fields.jmcg_calculatedfield_.jmcg_concatenatefield2, Fields.jmcg_testentity_.jmcg_string },
+                    { Fields.jmcg_calculatedfield_.jmcg_concatenatefield3, Fields.jmcg_testentity_.jmcg_boolean },
+                    { Fields.jmcg_calculatedfield_.jmcg_concatenateskipvalues, "SKIP;1" },
+                    { Fields.jmcg_calculatedfield_.jmcg_separatortype, new OptionSetValue(OptionSets.CalculatedField.SeparatorType.Space) },
+                });
+
+            var testRecord = CreateTestRecord(Entities.jmcg_testentity, new Dictionary<string, object>()
+            {
+                { Fields.jmcg_testentity_.jmcg_string, "Skip" },
+                { Fields.jmcg_testentity_.jmcg_integer, 1 },
+                { Fields.jmcg_testentity_.jmcg_boolean, true },
+            });
+            var calculatedName = testRecord.GetStringField(Fields.jmcg_testentity_.jmcg_name);
+            var expectedName = $"Yes";
+            Assert.AreEqual(expectedName, calculatedName);
+        }
+
+        [TestMethod]
         public void CalculatedFieldsConcatenateAnnotationsPluginTest()
         {
             DeleteAllCalculatedFields();

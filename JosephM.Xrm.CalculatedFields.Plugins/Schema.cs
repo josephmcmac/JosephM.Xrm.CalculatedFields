@@ -3680,6 +3680,7 @@ namespace Schema
 			public const string jmcg_concatenatefield6prepend = "jmcg_concatenatefield6prepend";
 			public const string jmcg_concatenatefield6prependspaced = "jmcg_concatenatefield6prependspaced";
 			public const string jmcg_concatenatefield6selectionfield = "jmcg_concatenatefield6selectionfield";
+			public const string jmcg_concatenateskipvalues = "jmcg_concatenateskipvalues";
 			public const string jmcg_entitytype = "jmcg_entitytype";
 			public const string jmcg_entitytyperolledup = "jmcg_entitytyperolledup";
 			public const string jmcg_entitytyperolledupselectionfield = "jmcg_entitytyperolledupselectionfield";
