@@ -1022,6 +1022,15 @@ namespace JosephM.Xrm.CalculatedFields.Plugins.Services
                 AppendStringFieldName = Fields.jmcg_calculatedfield_.jmcg_concatenatefield5append,
                 AppendStringSpacedFieldName = Fields.jmcg_calculatedfield_.jmcg_concatenatefield5appendspaced
             },
+            new ConcatenateFieldSetting
+            {
+                FieldName = Fields.jmcg_calculatedfield_.jmcg_concatenatefield6,
+                FormatFieldName = Fields.jmcg_calculatedfield_.jmcg_concatenatefield6formatstring,
+                PrependStringFieldName = Fields.jmcg_calculatedfield_.jmcg_concatenatefield6prepend,
+                PrependStringSpacedFieldName = Fields.jmcg_calculatedfield_.jmcg_concatenatefield6prependspaced,
+                AppendStringFieldName = Fields.jmcg_calculatedfield_.jmcg_concatenatefield6append,
+                AppendStringSpacedFieldName = Fields.jmcg_calculatedfield_.jmcg_concatenatefield6appendspaced
+            },
         };
     }
 }

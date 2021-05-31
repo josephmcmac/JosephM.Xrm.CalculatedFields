@@ -60,6 +60,7 @@ CalculatedJs.RunOnLoad = function () {
     CalculatedJs.AddFieldSelectionPicklist(CalculatedJs.options.Type.Concatenate, "jmcg_entitytype", "jmcg_concatenatefield3selectionfield", "jmcg_concatenatefield3", null);
     CalculatedJs.AddFieldSelectionPicklist(CalculatedJs.options.Type.Concatenate, "jmcg_entitytype", "jmcg_concatenatefield4selectionfield", "jmcg_concatenatefield4", null);
     CalculatedJs.AddFieldSelectionPicklist(CalculatedJs.options.Type.Concatenate, "jmcg_entitytype", "jmcg_concatenatefield5selectionfield", "jmcg_concatenatefield5", null);
+    CalculatedJs.AddFieldSelectionPicklist(CalculatedJs.options.Type.Concatenate, "jmcg_entitytype", "jmcg_concatenatefield6selectionfield", "jmcg_concatenatefield6", null);
     CalculatedJs.AddFieldSelectionPicklist(CalculatedJs.options.Type.AddTime, "jmcg_entitytype", "jmcg_addtimetofieldselectionfield", "jmcg_addtimetofield", ["DateTime"]);
     CalculatedJs.AddFieldSelectionPicklist(CalculatedJs.options.Type.TimeTaken, "jmcg_entitytype", "jmcg_timetakenstartfieldselectionfield", "jmcg_timetakenstartfield", ["DateTime"]);
     CalculatedJs.AddFieldSelectionPicklist(CalculatedJs.options.Type.TimeTaken, "jmcg_entitytype", "jmcg_timetakenendfieldselectionfield", "jmcg_timetakenendfield", ["DateTime"]);
