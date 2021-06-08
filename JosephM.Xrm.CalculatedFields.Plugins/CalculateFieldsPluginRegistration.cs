@@ -53,7 +53,7 @@ namespace JosephM.Xrm.CalculatedFields.Plugins
                         {
                             //ensure we add before this item if our target is one of its dependent fields
                             var thisTargetField = config.CalculatedFieldEntity.GetStringField(Fields.jmcg_calculatedfield_.jmcg_field);
-                            var dependentFields = calculatedService.GetDependencyFields(added);
+                            var dependentFields = calculatedService.GetDependencyFields(added, entityType);
                             if(dependentFields.Contains(thisTargetField))
                             {
                                 ordered.Insert(i, config);

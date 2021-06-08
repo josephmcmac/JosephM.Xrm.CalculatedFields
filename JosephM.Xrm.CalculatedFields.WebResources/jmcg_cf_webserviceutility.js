@@ -1,6 +1,4 @@
-﻿/// <reference path="template_jquery.js" />
-
-//Note object instantiated after function definition
+﻿//Note object instantiated after function definition
 
 if (typeof Xrm === 'undefined')
     Xrm = window.parent.Xrm;

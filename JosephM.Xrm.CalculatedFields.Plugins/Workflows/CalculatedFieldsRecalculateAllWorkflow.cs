@@ -69,7 +69,7 @@ namespace JosephM.Xrm.CalculatedFields.Plugins.Workflows
                 var calciulatedFieldEntityName = target.GetStringField(Fields.jmcg_calculatedfield_.jmcg_entitytype);
                 fieldsToLoad.Add(calculatedFieldFieldName);
                 fieldsToLoad.Add("createdon");
-                fieldsToLoad.AddRange(CalculatedService.GetDependencyFields(config));
+                fieldsToLoad.AddRange(CalculatedService.GetDependencyFields(config, config.CalculatedFieldEntity.GetStringField(Fields.jmcg_calculatedfield_.jmcg_entitytype)));
 
                 while (true)
                 {

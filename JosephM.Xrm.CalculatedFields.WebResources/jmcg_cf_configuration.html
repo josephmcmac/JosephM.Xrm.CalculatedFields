@@ -57,6 +57,14 @@
             </td>
         </tr>
         <tr>
+            <td>Lookup</td>
+            <td>
+                This type synchronises a fields value with a field in a record referenced by a lookup field<br /><br />
+                Avoid using this calculation type where a large volume of records will be related as the system will synch the value to all related records when it is changed in the referenced record<br /><br />
+                It may be used where the field value needs to be accessible in a record and cannot be accessed for some purpose through the related record
+            </td>
+        </tr>
+        <tr>
             <td>Rollup</td>
             <td>
                 This type aggregates child records into a parent. A FetchXml filter may also be used to filter which related records are included in the aggregation<br /><br />

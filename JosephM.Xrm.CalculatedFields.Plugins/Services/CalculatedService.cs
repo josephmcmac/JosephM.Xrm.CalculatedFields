@@ -303,10 +303,19 @@ namespace JosephM.Xrm.CalculatedFields.Plugins.Services
                 }
                 if (calculationType == OptionSets.CalculatedField.Type.Concatenate
                     || calculationType == OptionSets.CalculatedField.Type.AddTime
-                    || calculationType == OptionSets.CalculatedField.Type.TimeTaken)
+                    || calculationType == OptionSets.CalculatedField.Type.TimeTaken
+                    || calculationType == OptionSets.CalculatedField.Type.Lookup)
                 {
                     addToDictionary(targetEntity, PluginMessage.Create, PluginStage.PreOperationEvent, calculatedField);
                     addToDictionary(targetEntity, PluginMessage.Update, PluginStage.PreOperationEvent, calculatedField);
+                }
+                if (calculationType == OptionSets.CalculatedField.Type.Lookup)
+                {
+                    var referencedType = calculatedField.GetStringField(Fields.jmcg_calculatedfield_.jmcg_referencedtype);
+                    if (referencedType != targetEntity)
+                    {
+                        addToDictionary(referencedType, PluginMessage.Update, PluginStage.PreOperationEvent, calculatedField);
+                    }
                 }
             }
 
@@ -521,8 +530,98 @@ namespace JosephM.Xrm.CalculatedFields.Plugins.Services
                     rollupService.ExecuteDependencyPlugin(plugin);
                 }
             }
+            var lookupCalculations = calculatedConfigs
+                .Where(cf => cf.CalculatedFieldEntity.GetOptionSetValue(Fields.jmcg_calculatedfield_.jmcg_type) == OptionSets.CalculatedField.Type.Lookup)
+                .ToArray();
 
-            foreach (var calculatedConfig in calculatedConfigs.Except(rollupCalculations).ToArray())
+            var lookupGroupDictionary = new Dictionary<string, Dictionary<string, Dictionary<string, List<CalculatedFieldsConfig>>>>();
+            foreach (var lookupCalculation in lookupCalculations)
+            {
+                var entityType = lookupCalculation.CalculatedFieldEntity.GetStringField(Fields.jmcg_calculatedfield_.jmcg_entitytype);
+                var lookupField = lookupCalculation.CalculatedFieldEntity.GetStringField(Fields.jmcg_calculatedfield_.jmcg_lookupfield);
+                var referencedType = lookupCalculation.CalculatedFieldEntity.GetStringField(Fields.jmcg_calculatedfield_.jmcg_referencedtype);
+                if (!lookupGroupDictionary.ContainsKey(entityType))
+                {
+                    lookupGroupDictionary.Add(entityType, new Dictionary<string, Dictionary<string, List<CalculatedFieldsConfig>>>());
+                }
+                if (!lookupGroupDictionary[entityType].ContainsKey(lookupField))
+                {
+                    lookupGroupDictionary[entityType].Add(lookupField, new Dictionary<string, List<CalculatedFieldsConfig>>());
+                }
+                if (!lookupGroupDictionary[entityType][lookupField].ContainsKey(referencedType))
+                {
+                    lookupGroupDictionary[entityType][lookupField].Add(referencedType, new List<CalculatedFieldsConfig>());
+                }
+                lookupGroupDictionary[entityType][lookupField][referencedType].Add(lookupCalculation);
+            }
+            foreach (var entityTypeKey in lookupGroupDictionary.Keys)
+            {
+                foreach (var lookupFieldKey in lookupGroupDictionary[entityTypeKey].Keys)
+                {
+                    foreach (var referencedTypeKey in lookupGroupDictionary[entityTypeKey][lookupFieldKey].Keys)
+                    {
+                        var lookupCalculationConfigs = lookupGroupDictionary[entityTypeKey][lookupFieldKey][referencedTypeKey];
+                        if (plugin.TargetType == entityTypeKey)
+                        {
+                            if (plugin.FieldChanging(lookupFieldKey))
+                            {
+                                var lookupId = plugin.GetLookupGuid(lookupFieldKey);
+                                var referencedEntity = lookupId.HasValue
+                                    ? XrmService.Retrieve(referencedTypeKey, lookupId.Value, lookupCalculationConfigs.Select(c => c.CalculatedFieldEntity.GetStringField(Fields.jmcg_calculatedfield_.jmcg_referencedtypetargetfield)))
+                                    : null;
+
+                                foreach(var lookupCalculationConfig in lookupCalculationConfigs)
+                                {
+                                    var sourceField = lookupCalculationConfig.CalculatedFieldEntity.GetStringField(Fields.jmcg_calculatedfield_.jmcg_referencedtypetargetfield);
+                                    var targetField = lookupCalculationConfig.CalculatedFieldEntity.GetStringField(Fields.jmcg_calculatedfield_.jmcg_field);
+                                    var oldValue = plugin.GetField(targetField);
+                                    var newValue = referencedEntity.GetField(sourceField);
+                                    if (!XrmEntity.FieldsEqual(oldValue, newValue))
+                                    {
+                                        plugin.SetField(targetField, newValue);
+                                    }
+                                }
+                            }
+                        }
+                        if (plugin.TargetType == referencedTypeKey)
+                        {
+                            if (plugin.FieldChanging(lookupCalculationConfigs.Select(c => c.CalculatedFieldEntity.GetStringField(Fields.jmcg_calculatedfield_.jmcg_referencedtypetargetfield))))
+                            {
+                                var referencingRecords = XrmService.RetrieveAllAndConditions(entityTypeKey, new[]
+                                {
+                                    new ConditionExpression(lookupFieldKey, ConditionOperator.Equal, plugin.TargetId)
+                                 }, lookupCalculationConfigs.Select(c => c.CalculatedFieldEntity.GetStringField(Fields.jmcg_calculatedfield_.jmcg_field)));
+
+                                foreach (var referencingRecord in referencingRecords)
+                                {
+                                    var updateEntity = new Entity(referencingRecord.LogicalName)
+                                    {
+                                        Id = referencingRecord.Id
+                                    };
+
+                                    foreach (var lookupCalculationConfig in lookupCalculationConfigs)
+                                    {
+                                        var sourceField = lookupCalculationConfig.CalculatedFieldEntity.GetStringField(Fields.jmcg_calculatedfield_.jmcg_referencedtypetargetfield);
+                                        var targetField = lookupCalculationConfig.CalculatedFieldEntity.GetStringField(Fields.jmcg_calculatedfield_.jmcg_field);
+                                        var oldValue = referencingRecord.GetField(targetField);
+                                        var newValue = plugin.GetField(sourceField);
+                                        if (!XrmEntity.FieldsEqual(oldValue, newValue))
+                                        {
+                                            updateEntity.SetField(targetField, newValue);
+                                        }
+                                    }
+                                    if(updateEntity.Attributes.Any())
+                                    {
+                                        XrmService.Update(updateEntity);
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            foreach (var calculatedConfig in calculatedConfigs.Except(rollupCalculations.Union(lookupCalculations)).ToArray())
             {
                 if (IsDependencyChanging(calculatedConfig, plugin))
                 {
@@ -611,6 +710,14 @@ namespace JosephM.Xrm.CalculatedFields.Plugins.Services
                         {
                             return null;
                         }
+                    }
+                case OptionSets.CalculatedField.Type.Lookup:
+                    {
+                        var lookupId = XrmEntity.GetLookupGuid(getField(calculatedConfig.CalculatedFieldEntity.GetStringField(Fields.jmcg_calculatedfield_.jmcg_lookupfield)));
+                        var referencedEntity = lookupId.HasValue
+                            ? XrmService.Retrieve(calculatedConfig.CalculatedFieldEntity.GetStringField(Fields.jmcg_calculatedfield_.jmcg_referencedtype), lookupId.Value, new[] { calculatedConfig.CalculatedFieldEntity.GetStringField(Fields.jmcg_calculatedfield_.jmcg_referencedtypetargetfield) })
+                            : null;
+                        return referencedEntity.GetField(calculatedConfig.CalculatedFieldEntity.GetStringField(Fields.jmcg_calculatedfield_.jmcg_referencedtypetargetfield));
                     }
             }
             throw new NotImplementedException($"Not implemented for type {calculationType}");
@@ -782,7 +889,7 @@ namespace JosephM.Xrm.CalculatedFields.Plugins.Services
             return concatenateFields.Where(s => !string.IsNullOrWhiteSpace(s)).ToArray();
         }
 
-        public IEnumerable<string> GetDependencyFields(CalculatedFieldsConfig calculatedConfig)
+        public IEnumerable<string> GetDependencyFields(CalculatedFieldsConfig calculatedConfig, string typeChanging)
         {
             var calculationType = calculatedConfig.CalculatedFieldEntity.GetOptionSetValue(Fields.jmcg_calculatedfield_.jmcg_type);
             var dependencyFields = new List<string>();
@@ -804,13 +911,27 @@ namespace JosephM.Xrm.CalculatedFields.Plugins.Services
                         dependencyFields.Add(calculatedConfig.CalculatedFieldEntity.GetStringField(Fields.jmcg_calculatedfield_.jmcg_timetakenendfield));
                         break;
                     }
+                case OptionSets.CalculatedField.Type.Lookup:
+                    {
+                        var targetType = calculatedConfig.CalculatedFieldEntity.GetStringField(Fields.jmcg_calculatedfield_.jmcg_entitytype);
+                        var referencedType = calculatedConfig.CalculatedFieldEntity.GetStringField(Fields.jmcg_calculatedfield_.jmcg_referencedtype);
+                        if(typeChanging == targetType)
+                        {
+                            dependencyFields.Add(calculatedConfig.CalculatedFieldEntity.GetStringField(Fields.jmcg_calculatedfield_.jmcg_lookupfield));
+                        }
+                        if (typeChanging == referencedType)
+                        {
+                            dependencyFields.Add(calculatedConfig.CalculatedFieldEntity.GetStringField(Fields.jmcg_calculatedfield_.jmcg_referencedtypetargetfield));
+                        }
+                        break;
+                    }
             }
             return dependencyFields;
         }
 
         private bool IsDependencyChanging(CalculatedFieldsConfig calculatedConfig, XrmEntityPlugin plugin)
         {
-            var dependencyFields = GetDependencyFields(calculatedConfig);
+            var dependencyFields = GetDependencyFields(calculatedConfig, plugin.TargetType);
             return dependencyFields.Any() && plugin.FieldChanging(dependencyFields);
         }
 
