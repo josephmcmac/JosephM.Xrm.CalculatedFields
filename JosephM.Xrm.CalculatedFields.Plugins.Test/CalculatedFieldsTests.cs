@@ -162,7 +162,7 @@ namespace JosephM.Xrm.CalculatedFields.Plugins.Test
             var mondayStartUtc = LocalisationService.ConvertTargetToUtc(mondayNoon);
 
             var testEntity = new Entity(Entities.jmcg_testentity);
-            foreach(var config in configs)
+            foreach (var config in configs)
             {
                 testEntity.SetField(config.FieldSource, config.UseTime ? fridayNoon : fridayStart);
             }
@@ -171,7 +171,7 @@ namespace JosephM.Xrm.CalculatedFields.Plugins.Test
             {
                 var addedTime = testEntity.GetDateTimeField(config.Field);
                 Assert.IsTrue(addedTime.HasValue);
-                if(config.UseTime)
+                if (config.UseTime)
                 {
                     if (addedTime.Value.Kind == DateTimeKind.Utc)
                     {
@@ -399,7 +399,7 @@ namespace JosephM.Xrm.CalculatedFields.Plugins.Test
 
             var calculatedFields = CreateCalculatedFieldsForConfigs(configs);
 
-            foreach(var calculated in calculatedFields)
+            foreach (var calculated in calculatedFields)
             {
                 calculated.SetField(Fields.jmcg_calculatedfield_.jmcg_recalculateall, true);
                 var updated = UpdateFieldsAndRetreive(calculated, Fields.jmcg_calculatedfield_.jmcg_recalculateall);
@@ -1193,6 +1193,77 @@ namespace JosephM.Xrm.CalculatedFields.Plugins.Test
         }
 
         [TestMethod]
+        public void CalculatedFieldsConcatenateSkipValuesPluginTest()
+        {
+            DeleteAllCalculatedFields();
+
+            var concatenator = CreateTestRecord(Entities.jmcg_calculatedfield, new Dictionary<string, object>
+                {
+                    { Fields.jmcg_calculatedfield_.jmcg_type, new OptionSetValue(OptionSets.CalculatedField.Type.Concatenate) },
+                    { Fields.jmcg_calculatedfield_.jmcg_name, "Test Concatenatation" },
+                    { Fields.jmcg_calculatedfield_.jmcg_entitytype, Entities.jmcg_testentity },
+                    { Fields.jmcg_calculatedfield_.jmcg_field, Fields.jmcg_testentity_.jmcg_name },
+                    { Fields.jmcg_calculatedfield_.jmcg_concatenatefield1, Fields.jmcg_testentity_.jmcg_integer },
+                    { Fields.jmcg_calculatedfield_.jmcg_concatenatefield2, Fields.jmcg_testentity_.jmcg_string },
+                    { Fields.jmcg_calculatedfield_.jmcg_concatenatefield3, Fields.jmcg_testentity_.jmcg_boolean },
+                    { Fields.jmcg_calculatedfield_.jmcg_concatenateskipvalues, "SKIP;1" },
+                    { Fields.jmcg_calculatedfield_.jmcg_separatortype, new OptionSetValue(OptionSets.CalculatedField.SeparatorType.Space) },
+                });
+
+            var testRecord = CreateTestRecord(Entities.jmcg_testentity, new Dictionary<string, object>()
+            {
+                { Fields.jmcg_testentity_.jmcg_string, "Skip" },
+                { Fields.jmcg_testentity_.jmcg_integer, 1 },
+                { Fields.jmcg_testentity_.jmcg_boolean, true },
+            });
+            var calculatedName = testRecord.GetStringField(Fields.jmcg_testentity_.jmcg_name);
+            var expectedName = $"Yes";
+            Assert.AreEqual(expectedName, calculatedName);
+        }
+
+        [TestMethod]
+        public void CalculatedFieldsConcatenateAnnotationsPluginTest()
+        {
+            DeleteAllCalculatedFields();
+
+            var concatenator = CreateTestRecord(Entities.jmcg_calculatedfield, new Dictionary<string, object>
+                {
+                    { Fields.jmcg_calculatedfield_.jmcg_type, new OptionSetValue(OptionSets.CalculatedField.Type.Concatenate) },
+                    { Fields.jmcg_calculatedfield_.jmcg_name, "Test Concatenatation" },
+                    { Fields.jmcg_calculatedfield_.jmcg_entitytype, Entities.jmcg_testentity },
+                    { Fields.jmcg_calculatedfield_.jmcg_field, Fields.jmcg_testentity_.jmcg_name },
+                    { Fields.jmcg_calculatedfield_.jmcg_concatenatefield1, Fields.jmcg_testentity_.jmcg_string },
+                    { Fields.jmcg_calculatedfield_.jmcg_concatenatefield1prepend, "Name" },
+                    { Fields.jmcg_calculatedfield_.jmcg_concatenatefield1prependspaced, true },
+                    { Fields.jmcg_calculatedfield_.jmcg_concatenatefield1append, "-" },
+                    { Fields.jmcg_calculatedfield_.jmcg_concatenatefield1appendspaced, true },
+                    { Fields.jmcg_calculatedfield_.jmcg_concatenatefield2, Fields.jmcg_testentity_.jmcg_date },
+                    { Fields.jmcg_calculatedfield_.jmcg_concatenatefield2formatstring, "yyyy-MM-dd" },
+                    { Fields.jmcg_calculatedfield_.jmcg_concatenatefield2prepend, "(" },
+                    { Fields.jmcg_calculatedfield_.jmcg_concatenatefield2append, ")" },
+                    { Fields.jmcg_calculatedfield_.jmcg_concatenatefield3, Fields.jmcg_testentity_.jmcg_integer },
+                    { Fields.jmcg_calculatedfield_.jmcg_concatenatefield4, Fields.jmcg_testentity_.jmcg_account },
+                    { Fields.jmcg_calculatedfield_.jmcg_concatenatefield5, Fields.jmcg_testentity_.jmcg_boolean },
+                    { Fields.jmcg_calculatedfield_.jmcg_concatenatefield6, Fields.jmcg_testentity_.createdon },{ Fields.jmcg_calculatedfield_.jmcg_concatenatefield6formatstring, "dd/MM/yyyy" },
+                    { Fields.jmcg_calculatedfield_.jmcg_separatortype, new OptionSetValue(OptionSets.CalculatedField.SeparatorType.Space) },
+                });
+
+            var testRecord = CreateTestRecord(Entities.jmcg_testentity, new Dictionary<string, object>()
+            {
+                { Fields.jmcg_testentity_.jmcg_string, "Joseph" },
+                { Fields.jmcg_testentity_.jmcg_date, DateTime.UtcNow },
+                { Fields.jmcg_testentity_.jmcg_integer, 100 },
+                { Fields.jmcg_testentity_.jmcg_account, TestContactAccount.ToEntityReference() },
+                { Fields.jmcg_testentity_.jmcg_boolean, true },
+            });
+            var calculatedName = testRecord.GetStringField(Fields.jmcg_testentity_.jmcg_name);
+            var expectedName = $"Name Joseph - ({LocalisationService.TargetToday.ToString("yyyy-MM-dd")}) 100 {TestContactAccount.GetStringField(Fields.account_.name)} Yes {LocalisationService.TargetToday.ToString("dd/MM/yyyy")}";
+            Assert.AreEqual(expectedName, calculatedName);
+
+            var testRecordNonePopulated = CreateTestRecord(Entities.jmcg_testentity);
+        }
+
+        [TestMethod]
         public void CalculatedFieldsConcatenatePluginTest()
         {
             DeleteAllCalculatedFields();
@@ -1201,13 +1272,14 @@ namespace JosephM.Xrm.CalculatedFields.Plugins.Test
             {
                 new TestConcatenateConfig(Entities.jmcg_testentity, Fields.jmcg_testentity_.jmcg_name, new[]
                 {
-                    Fields.jmcg_testentity_.jmcg_account, Fields.jmcg_testentity_.jmcg_date, Fields.jmcg_testentity_.jmcg_money, Fields.jmcg_testentity_.jmcg_decimal, Fields.jmcg_testentity_.jmcg_picklist
+                    Fields.jmcg_testentity_.jmcg_account, Fields.jmcg_testentity_.jmcg_date, Fields.jmcg_testentity_.jmcg_money, Fields.jmcg_testentity_.jmcg_decimal, Fields.jmcg_testentity_.jmcg_picklist,
+                    Fields.jmcg_testentity_.jmcg_boolean
                 }, new object[]
                 {
-                    TestContactAccount.ToEntityReference(), LocalisationService.TodayUnspecifiedType, new Money((decimal)111.11), (decimal)111.1, new OptionSetValue(OptionSets.TestEntity.Picklist.Option1)
+                    TestContactAccount.ToEntityReference(), LocalisationService.TodayUnspecifiedType, new Money((decimal)111.11), (decimal)111.1, new OptionSetValue(OptionSets.TestEntity.Picklist.Option1), true
                 }, new object[]
                 {
-                    TestContactAccount.ToEntityReference(), LocalisationService.TodayUnspecifiedType.AddDays(1), new Money((decimal)222.22), (decimal)222.2, new OptionSetValue(OptionSets.TestEntity.Picklist.Option2)
+                    TestContactAccount.ToEntityReference(), LocalisationService.TodayUnspecifiedType.AddDays(1), new Money((decimal)222.22), (decimal)222.2, new OptionSetValue(OptionSets.TestEntity.Picklist.Option2), false
                 }, OptionSets.CalculatedField.SeparatorType.OtherString, ":", true, true, false)
             };
 
@@ -1217,11 +1289,11 @@ namespace JosephM.Xrm.CalculatedFields.Plugins.Test
             {
                 var indexes = new List<int>();
                 var target = new Entity(config.EntityType);
-                for (var i = 0; i < 5; i++)
+                for (var i = 0; i < config.ConcatenateField.Length; i++)
                 {
                     indexes.Add(i);
                 }
-                foreach(var index in indexes)
+                foreach (var index in indexes)
                 {
                     target.SetField(config.ConcatenateField[index], config.ConcatenateValues1[index]);
                 }
@@ -1381,6 +1453,7 @@ namespace JosephM.Xrm.CalculatedFields.Plugins.Test
                     { Fields.jmcg_calculatedfield_.jmcg_concatenatefield3, config.ConcatenateField != null && config.ConcatenateField.Length > 2 ? config.ConcatenateField[2] : null },
                     { Fields.jmcg_calculatedfield_.jmcg_concatenatefield4, config.ConcatenateField != null && config.ConcatenateField.Length > 3 ? config.ConcatenateField[3] : null },
                     { Fields.jmcg_calculatedfield_.jmcg_concatenatefield5, config.ConcatenateField != null && config.ConcatenateField.Length > 4 ? config.ConcatenateField[4] : null },
+                    { Fields.jmcg_calculatedfield_.jmcg_concatenatefield6, config.ConcatenateField != null && config.ConcatenateField.Length > 5 ? config.ConcatenateField[5] : null },
                     { Fields.jmcg_calculatedfield_.jmcg_separatortype, new OptionSetValue(config.SeparatorType) },
                     { Fields.jmcg_calculatedfield_.jmcg_separatorstring, config.SeparatorString },
                     { Fields.jmcg_calculatedfield_.jmcg_separatorspacebefore, config.PrefixSpace },
@@ -1476,7 +1549,7 @@ namespace JosephM.Xrm.CalculatedFields.Plugins.Test
 
             calculateFieldsEvents = CalculatedService.GetCalculateFieldsEvents();
             Assert.AreEqual(11, calculateFieldsEvents.Count());
-            
+
             CreateCalculatedFieldsForConfig(new[]
             {
                 new TestConcatenateConfig(Entities.jmcg_testentity, Fields.jmcg_testentity_.jmcg_name, new[]
@@ -1565,7 +1638,7 @@ namespace JosephM.Xrm.CalculatedFields.Plugins.Test
 
         public class TestRollupsConfig
         {
-            public TestRollupsConfig(string typeRolledUpTo, string typeRolledUp, string typeRolledUpReferenceField, string filterXml,TestRollupConfig[] testRollupConfigs)
+            public TestRollupsConfig(string typeRolledUpTo, string typeRolledUp, string typeRolledUpReferenceField, string filterXml, TestRollupConfig[] testRollupConfigs)
             {
                 TypeRolledUpTo = typeRolledUpTo;
                 TypeRolledUp = typeRolledUp;

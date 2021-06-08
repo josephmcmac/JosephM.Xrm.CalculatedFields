@@ -1,0 +1,75 @@
+﻿<!DOCTYPE html>
+
+<html lang="en" xmlns="http://www.w3.org/1999/xhtml">
+<head>
+    <meta charset="utf-8" />
+    <title></title>
+</head>
+<body>
+    <style type="text/css">
+        p th td {
+            font-family: Segoe UI, Tahoma, Arial;
+            font-size: 11px;
+            color: #444444;
+        }
+
+        th {
+            vertical-align: top;
+            text-align: left;
+            margin: 5px;
+            border-style: solid;
+            border-width: 1px;
+            padding: 5px;
+        }
+
+        td {
+            vertical-align: top;
+            text-align: left;
+            margin: 5px;
+            border-style: solid;
+            border-width: 1px;
+            padding: 5px;
+        }
+    </style>
+    <h1>Joseph Mcgregor Calculated Fields</h1>
+    <p>This solution adds the capability to configure calcualted fields of various types through configuration records</p>
+    <p>Calculated fields are configured by creating 'Calculated Field' records. These may be of the types detailed in the table below, and when created the system will configure plugins to repopulate the calculated field whenever a dependant value is changed</p>
+    <p>See this article for more details <a target="_blank" href="https://josephmcmac.wordpress.com/2020/11/30/dynamics-for-ce-calculated-fields-solution">https://josephmcmac.wordpress.com/2020/11/30/dynamics-for-ce-calculated-fields-solution</a></p>
+    <table>
+        <thead>
+            <tr>
+                <th>Calculated Field Type</th>
+                <th>Details</th>
+            </tr>
+        </thead>
+        <tr>
+            <td>Add Time</td>
+            <td>
+                This type calculates a datetime field as a certain time period before or after another datetime field.  The time added may be in minutes, hours, days or months and may also be filtered to only include hours configured within a service calendar<br /><br />
+                It may be used for example if a follow up process needs to occur after a specified time period
+            </td>
+        </tr>
+        <tr>
+            <td>Concatenate</td>
+            <td>
+                This type concatenates one or more fields together into a formatted string in another field<br /><br />
+                It may be used for example to generate the name field or any other requirement to have a formatted string persisted 
+            </td>
+        </tr>
+        <tr>
+            <td>Rollup</td>
+            <td>
+                This type aggregates child records into a parent. A FetchXml filter may also be used to filter which related records are included in the aggregation<br /><br />
+                It may be used to capture a count of related record, sum a field in related records, capture if there is at least one related record, and concatenate strings in related records
+            </td>
+        </tr>
+        <tr>
+            <td>Time Taken</td>
+            <td>
+                This type calculates the time measure between one datetime field and another datetime field. The time taken measure may be in minutes, hours, days or months and may also be filtered to only include hours configured within a service calendar<br /><br />
+                It may be used for example to determine how long processes are taking to complete
+            </td>
+        </tr>
+    </table>
+</body>
+</html>

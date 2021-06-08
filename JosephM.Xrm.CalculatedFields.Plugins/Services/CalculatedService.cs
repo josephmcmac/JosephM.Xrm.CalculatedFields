@@ -63,7 +63,7 @@ namespace JosephM.Xrm.CalculatedFields.Plugins.Services
                 case OptionSets.CalculatedField.TimeType.WorkHours:
                 case OptionSets.CalculatedField.TimeType.WorkDays:
                     {
-                        if(!workCalendarId.HasValue)
+                        if (!workCalendarId.HasValue)
                         {
                             throw new ArgumentNullException(nameof(workCalendarId), "Required for work time type " + timeType);
                         }
@@ -387,7 +387,7 @@ namespace JosephM.Xrm.CalculatedFields.Plugins.Services
         private string SerialiseToString(List<Entity> entities)
         {
             var serialiseEntities = new List<SerialisedEntity>();
-            foreach(var entity in entities)
+            foreach (var entity in entities)
             {
                 var serialise = new SerialisedEntity();
                 serialise.Id = entity.Id;
@@ -448,14 +448,14 @@ namespace JosephM.Xrm.CalculatedFields.Plugins.Services
             {
                 theObject = serializer.ReadObject(stream);
             }
-            var deserialisedEntities = (SerialisedEntity[]) theObject;
+            var deserialisedEntities = (SerialisedEntity[])theObject;
 
             var entities = new List<Entity>();
-            foreach(var deserialised in deserialisedEntities)
+            foreach (var deserialised in deserialisedEntities)
             {
                 var entity = new Entity(deserialised.LogicalName);
                 entity.Id = deserialised.Id;
-                foreach(var keyValue in deserialised.Attributes)
+                foreach (var keyValue in deserialised.Attributes)
                 {
                     entity[keyValue.Key] = keyValue.Value;
                 }
@@ -508,7 +508,7 @@ namespace JosephM.Xrm.CalculatedFields.Plugins.Services
                 .Where(cf => cf.CalculatedFieldEntity.GetOptionSetValue(Fields.jmcg_calculatedfield_.jmcg_type) == OptionSets.CalculatedField.Type.Rollup)
                 .ToArray();
             {
-                if(rollupCalculations.Any())
+                if (rollupCalculations.Any())
                 {
                     var rollups = new List<LookupRollup>();
                     foreach (var config in calculatedConfigs)
@@ -522,7 +522,7 @@ namespace JosephM.Xrm.CalculatedFields.Plugins.Services
                 }
             }
 
-            foreach(var calculatedConfig in calculatedConfigs.Except(rollupCalculations).ToArray())
+            foreach (var calculatedConfig in calculatedConfigs.Except(rollupCalculations).ToArray())
             {
                 if (IsDependencyChanging(calculatedConfig, plugin))
                 {
@@ -546,12 +546,42 @@ namespace JosephM.Xrm.CalculatedFields.Plugins.Services
             {
                 case OptionSets.CalculatedField.Type.Concatenate:
                     {
+                        var ignoreValuesString = calculatedConfig.CalculatedFieldEntity.GetStringField(Fields.jmcg_calculatedfield_.jmcg_concatenateskipvalues);
+                        var ignoreValues = string.IsNullOrWhiteSpace(ignoreValuesString)
+                            ? new string[0]
+                            : ignoreValuesString
+                                .Split(';')
+                                .Where(s => !string.IsNullOrWhiteSpace(s))
+                                .Select(s => s.Trim().ToLower())
+                                .ToArray();
+
                         var includeEmpty = calculatedConfig.CalculatedFieldEntity.GetBoolean(Fields.jmcg_calculatedfield_.jmcg_includeifempty);
-                        var concatFields = GetConcatenateFields(calculatedConfig);
-                        var concatValues = concatFields
-                            .Select(cf => XrmService.GetFieldAsDisplayString(entityTypeWithCalculation, cf, getField(cf), LocalisationService))
-                            .Where(v => includeEmpty || !string.IsNullOrWhiteSpace(v))
-                            .ToArray();
+                        var concatValues = new List<string>();
+                        foreach (var concatField in _concatenateFiels)
+                        {
+                            var thisField = calculatedConfig.CalculatedFieldEntity.GetStringField(concatField.FieldName);
+                            if (thisField != null)
+                            {
+                                var displayValue = XrmService.GetFieldAsDisplayString(entityTypeWithCalculation, thisField, getField(thisField), LocalisationService, funcOrFormat: calculatedConfig.CalculatedFieldEntity.GetStringField(concatField.FormatFieldName));
+                                if (includeEmpty || !string.IsNullOrWhiteSpace(displayValue)
+                                    && !(displayValue != null && ignoreValues.Contains(displayValue.ToLower())))
+                                {
+                                    var prependString = calculatedConfig.CalculatedFieldEntity.GetStringField(concatField.PrependStringFieldName);
+                                    if(calculatedConfig.CalculatedFieldEntity.GetBoolean(concatField.PrependStringSpacedFieldName))
+                                    {
+                                        prependString = prependString + " ";
+                                    }
+                                    var appendString = calculatedConfig.CalculatedFieldEntity.GetStringField(concatField.AppendStringFieldName);
+                                    if (calculatedConfig.CalculatedFieldEntity.GetBoolean(concatField.AppendStringSpacedFieldName))
+                                    {
+                                        appendString = " " + appendString;
+                                    }
+                                    displayValue = prependString + displayValue + appendString;
+                                    concatValues.Add(displayValue);
+                                }
+                            }
+                        }
+
                         return string.Join(GetSeparatorString(calculatedConfig.CalculatedFieldEntity), concatValues);
                     }
                 case OptionSets.CalculatedField.Type.AddTime:
@@ -610,7 +640,7 @@ namespace JosephM.Xrm.CalculatedFields.Plugins.Services
                         var startDay = LocalisationService.ConvertToTargetTime(startTime);
                         var endDay = LocalisationService.ConvertToTargetTime(endTime);
                         var daysTaken = 0;
-                        while(startDay < endDay)
+                        while (startDay < endDay)
                         {
                             startDay = startDay.AddDays(1);
                             daysTaken++;
@@ -625,7 +655,7 @@ namespace JosephM.Xrm.CalculatedFields.Plugins.Services
                         {
                             throw new ArgumentNullException(nameof(workCalendarId), "Required for time taken measure " + timeTakenMeasure);
                         }
-                        if(startTime >= endTime)
+                        if (startTime >= endTime)
                         {
                             return 0;
                         }
@@ -713,13 +743,13 @@ namespace JosephM.Xrm.CalculatedFields.Plugins.Services
                                     var localStart = LocalisationService.ConvertToTargetTime(timeSlot.Start.Value);
                                     var isInRange = startTimeLocal.Date <= localStart.Date
                                         && endTimeLocal.Date >= localStart.Date;
-                                    if(isInRange)
+                                    if (isInRange)
                                     {
                                         addDay(localStart);
                                     }
                                 }
                             }
-                            if(!daysCounted.Any())
+                            if (!daysCounted.Any())
                             {
                                 return 0;
                             }
@@ -745,11 +775,10 @@ namespace JosephM.Xrm.CalculatedFields.Plugins.Services
         public IEnumerable<string> GetConcatenateFields(CalculatedFieldsConfig calculatedConfig)
         {
             var concatenateFields = new List<string>();
-            concatenateFields.Add(calculatedConfig.CalculatedFieldEntity.GetStringField(Fields.jmcg_calculatedfield_.jmcg_concatenatefield1));
-            concatenateFields.Add(calculatedConfig.CalculatedFieldEntity.GetStringField(Fields.jmcg_calculatedfield_.jmcg_concatenatefield2));
-            concatenateFields.Add(calculatedConfig.CalculatedFieldEntity.GetStringField(Fields.jmcg_calculatedfield_.jmcg_concatenatefield3));
-            concatenateFields.Add(calculatedConfig.CalculatedFieldEntity.GetStringField(Fields.jmcg_calculatedfield_.jmcg_concatenatefield4));
-            concatenateFields.Add(calculatedConfig.CalculatedFieldEntity.GetStringField(Fields.jmcg_calculatedfield_.jmcg_concatenatefield5));
+            foreach (var field in _concatenateFiels)
+            {
+                concatenateFields.Add(calculatedConfig.CalculatedFieldEntity.GetStringField(field.FieldName));
+            }
             return concatenateFields.Where(s => !string.IsNullOrWhiteSpace(s)).ToArray();
         }
 
@@ -806,7 +835,7 @@ namespace JosephM.Xrm.CalculatedFields.Plugins.Services
         public string GetSeparatorString(Entity calculatedField)
         {
             var result = "";
-            switch(calculatedField.GetOptionSetValue(Fields.jmcg_calculatedfield_.jmcg_separatortype))
+            switch (calculatedField.GetOptionSetValue(Fields.jmcg_calculatedfield_.jmcg_separatortype))
             {
                 case OptionSets.CalculatedField.SeparatorType.Comma:
                     {
@@ -825,7 +854,7 @@ namespace JosephM.Xrm.CalculatedFields.Plugins.Services
                     }
                 case OptionSets.CalculatedField.SeparatorType.Pipe:
                     {
-                        result ="|";
+                        result = "|";
                         break;
                     }
                 case OptionSets.CalculatedField.SeparatorType.Space:
@@ -839,7 +868,7 @@ namespace JosephM.Xrm.CalculatedFields.Plugins.Services
                         break;
                     }
             }
-            if(calculatedField.GetBoolean(Fields.jmcg_calculatedfield_.jmcg_separatorspacebefore))
+            if (calculatedField.GetBoolean(Fields.jmcg_calculatedfield_.jmcg_separatorspacebefore))
             {
                 result = " " + result;
             }
@@ -945,24 +974,73 @@ namespace JosephM.Xrm.CalculatedFields.Plugins.Services
             public Guid Id { get; set; }
             public Dictionary<string, object> Attributes { get; set; }
         }
+
+        public class ConcatenateFieldSetting
+        {
+            public string FieldName { get; set; }
+            public string FormatFieldName { get; set; }
+            public string PrependStringFieldName { get; set; }
+            public string PrependStringSpacedFieldName { get; set; }
+            public string AppendStringFieldName { get; set; }
+            public string AppendStringSpacedFieldName { get; set; }
+        }
+
+        private IEnumerable<ConcatenateFieldSetting> _concatenateFiels = new[]
+        {
+            new ConcatenateFieldSetting
+            {
+                FieldName = Fields.jmcg_calculatedfield_.jmcg_concatenatefield1,
+                FormatFieldName = Fields.jmcg_calculatedfield_.jmcg_concatenatefield1formatstring,
+                PrependStringFieldName = Fields.jmcg_calculatedfield_.jmcg_concatenatefield1prepend,
+                PrependStringSpacedFieldName = Fields.jmcg_calculatedfield_.jmcg_concatenatefield1prependspaced,
+                AppendStringFieldName = Fields.jmcg_calculatedfield_.jmcg_concatenatefield1append,
+                AppendStringSpacedFieldName = Fields.jmcg_calculatedfield_.jmcg_concatenatefield1appendspaced
+            },
+            new ConcatenateFieldSetting
+            {
+                FieldName = Fields.jmcg_calculatedfield_.jmcg_concatenatefield2,
+                FormatFieldName = Fields.jmcg_calculatedfield_.jmcg_concatenatefield2formatstring,
+                PrependStringFieldName = Fields.jmcg_calculatedfield_.jmcg_concatenatefield2prepend,
+                PrependStringSpacedFieldName = Fields.jmcg_calculatedfield_.jmcg_concatenatefield2prependspaced,
+                AppendStringFieldName = Fields.jmcg_calculatedfield_.jmcg_concatenatefield2append,
+                AppendStringSpacedFieldName = Fields.jmcg_calculatedfield_.jmcg_concatenatefield2appendspaced
+            },
+            new ConcatenateFieldSetting
+            {
+                FieldName = Fields.jmcg_calculatedfield_.jmcg_concatenatefield3,
+                FormatFieldName = Fields.jmcg_calculatedfield_.jmcg_concatenatefield3formatstring,
+                PrependStringFieldName = Fields.jmcg_calculatedfield_.jmcg_concatenatefield3prepend,
+                PrependStringSpacedFieldName = Fields.jmcg_calculatedfield_.jmcg_concatenatefield3prependspaced,
+                AppendStringFieldName = Fields.jmcg_calculatedfield_.jmcg_concatenatefield3append,
+                AppendStringSpacedFieldName = Fields.jmcg_calculatedfield_.jmcg_concatenatefield3appendspaced
+            },
+            new ConcatenateFieldSetting
+            {
+                FieldName = Fields.jmcg_calculatedfield_.jmcg_concatenatefield4,
+                FormatFieldName = Fields.jmcg_calculatedfield_.jmcg_concatenatefield4formatstring,
+                PrependStringFieldName = Fields.jmcg_calculatedfield_.jmcg_concatenatefield4prepend,
+                PrependStringSpacedFieldName = Fields.jmcg_calculatedfield_.jmcg_concatenatefield4prependspaced,
+                AppendStringFieldName = Fields.jmcg_calculatedfield_.jmcg_concatenatefield4append,
+                AppendStringSpacedFieldName = Fields.jmcg_calculatedfield_.jmcg_concatenatefield4appendspaced
+            },
+            new ConcatenateFieldSetting
+            {
+                FieldName = Fields.jmcg_calculatedfield_.jmcg_concatenatefield5,
+                FormatFieldName = Fields.jmcg_calculatedfield_.jmcg_concatenatefield5formatstring,
+                PrependStringFieldName = Fields.jmcg_calculatedfield_.jmcg_concatenatefield5prepend,
+                PrependStringSpacedFieldName = Fields.jmcg_calculatedfield_.jmcg_concatenatefield5prependspaced,
+                AppendStringFieldName = Fields.jmcg_calculatedfield_.jmcg_concatenatefield5append,
+                AppendStringSpacedFieldName = Fields.jmcg_calculatedfield_.jmcg_concatenatefield5appendspaced
+            },
+            new ConcatenateFieldSetting
+            {
+                FieldName = Fields.jmcg_calculatedfield_.jmcg_concatenatefield6,
+                FormatFieldName = Fields.jmcg_calculatedfield_.jmcg_concatenatefield6formatstring,
+                PrependStringFieldName = Fields.jmcg_calculatedfield_.jmcg_concatenatefield6prepend,
+                PrependStringSpacedFieldName = Fields.jmcg_calculatedfield_.jmcg_concatenatefield6prependspaced,
+                AppendStringFieldName = Fields.jmcg_calculatedfield_.jmcg_concatenatefield6append,
+                AppendStringSpacedFieldName = Fields.jmcg_calculatedfield_.jmcg_concatenatefield6appendspaced
+            },
+        };
     }
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

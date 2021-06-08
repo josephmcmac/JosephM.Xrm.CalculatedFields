@@ -1043,7 +1043,7 @@ namespace JosephM.Xrm.CalculatedFields.Plugins.Xrm
                 foreach (var staticField in staticFields)
                 {
                     string staticFunc = null;
-                    activityDescription = activityDescription.Replace("[static|" + string.Format("{0}.{1}", staticType, staticField) + "]", GetFieldAsDisplayString(staticType, staticField, staticTarget.GetField(staticField), localisationService, isHtml: true, func: staticFunc));
+                    activityDescription = activityDescription.Replace("[static|" + string.Format("{0}.{1}", staticType, staticField) + "]", GetFieldAsDisplayString(staticType, staticField, staticTarget.GetField(staticField), localisationService, isHtml: true, funcOrFormat: staticFunc));
                 }
             }
             string removeThisFunkyChar = "\xFEFF";
@@ -1065,11 +1065,11 @@ namespace JosephM.Xrm.CalculatedFields.Plugins.Xrm
                 func = splitFunc.First();
                 getFieldString = splitFunc.ElementAt(1);
             }
-            var displayString = GetFieldAsDisplayString(thisFieldType, thisFieldName, targetObject.GetField(getFieldString), localisationService, isHtml: isHtml, func: func);
+            var displayString = GetFieldAsDisplayString(thisFieldType, thisFieldName, targetObject.GetField(getFieldString), localisationService, isHtml: isHtml, funcOrFormat: func);
             return displayString;
         }
 
-        public string GetFieldAsDisplayString(string recordType, string fieldName, object value, LocalisationService localisationService, bool isHtml = false, string func = null)
+        public string GetFieldAsDisplayString(string recordType, string fieldName, object value, LocalisationService localisationService, bool isHtml = false, string funcOrFormat = null)
         {
             if (value == null)
                 return "";
@@ -1110,9 +1110,17 @@ namespace JosephM.Xrm.CalculatedFields.Plugins.Xrm
             else if (value is DateTime dt)
             {
                 if (dt.Kind == DateTimeKind.Utc)
+                {
                     dt = localisationService.ConvertToTargetTime(dt);
-                if (func == "year")
+                }
+                if (funcOrFormat == "year")
+                {
                     return dt.ToString("yyyy");
+                }
+                if(funcOrFormat != null)
+                {
+                    return dt.ToString(funcOrFormat);
+                }
                 if (GetDateFormat(fieldName, recordType) == DateTimeFormat.DateAndTime)
                     return dt.ToString("dd/MM/yyyy hh:mm:ss tt");
                 return dt.Date.ToString("dd/MM/yyyy");
