@@ -662,6 +662,14 @@ namespace JosephM.Xrm.CalculatedFields.Plugins.Services
                             if (thisField != null)
                             {
                                 var displayValue = XrmService.GetFieldAsDisplayString(entityTypeWithCalculation, thisField, getField(thisField), LocalisationService, funcOrFormat: calculatedConfig.CalculatedFieldEntity.GetStringField(concatField.FormatFieldName));
+
+                                var setFieldEmptyIfNull = calculatedConfig.CalculatedFieldEntity.GetBoolean(concatField.IfEmptySetFieldEmptyFieldName);
+                                if (string.IsNullOrWhiteSpace(displayValue) && setFieldEmptyIfNull)
+                                {
+                                    concatValues.Clear();
+                                    break;
+                                }
+
                                 if (includeEmpty || !string.IsNullOrWhiteSpace(displayValue)
                                     && !(displayValue != null && ignoreValues.Contains(displayValue.ToLower())))
                                 {
@@ -1104,6 +1112,7 @@ namespace JosephM.Xrm.CalculatedFields.Plugins.Services
             public string PrependStringSpacedFieldName { get; set; }
             public string AppendStringFieldName { get; set; }
             public string AppendStringSpacedFieldName { get; set; }
+            public string IfEmptySetFieldEmptyFieldName { get; set; }
         }
 
         private IEnumerable<ConcatenateFieldSetting> _concatenateFiels = new[]
@@ -1115,7 +1124,8 @@ namespace JosephM.Xrm.CalculatedFields.Plugins.Services
                 PrependStringFieldName = Fields.jmcg_calculatedfield_.jmcg_concatenatefield1prepend,
                 PrependStringSpacedFieldName = Fields.jmcg_calculatedfield_.jmcg_concatenatefield1prependspaced,
                 AppendStringFieldName = Fields.jmcg_calculatedfield_.jmcg_concatenatefield1append,
-                AppendStringSpacedFieldName = Fields.jmcg_calculatedfield_.jmcg_concatenatefield1appendspaced
+                AppendStringSpacedFieldName = Fields.jmcg_calculatedfield_.jmcg_concatenatefield1appendspaced,
+                IfEmptySetFieldEmptyFieldName = Fields.jmcg_calculatedfield_.jmcg_concatenatefield1ifemptyleavefieldempty
             },
             new ConcatenateFieldSetting
             {
@@ -1124,7 +1134,8 @@ namespace JosephM.Xrm.CalculatedFields.Plugins.Services
                 PrependStringFieldName = Fields.jmcg_calculatedfield_.jmcg_concatenatefield2prepend,
                 PrependStringSpacedFieldName = Fields.jmcg_calculatedfield_.jmcg_concatenatefield2prependspaced,
                 AppendStringFieldName = Fields.jmcg_calculatedfield_.jmcg_concatenatefield2append,
-                AppendStringSpacedFieldName = Fields.jmcg_calculatedfield_.jmcg_concatenatefield2appendspaced
+                AppendStringSpacedFieldName = Fields.jmcg_calculatedfield_.jmcg_concatenatefield2appendspaced,
+                IfEmptySetFieldEmptyFieldName = Fields.jmcg_calculatedfield_.jmcg_concatenatefield2ifemptyleavefieldempty
             },
             new ConcatenateFieldSetting
             {
@@ -1133,7 +1144,8 @@ namespace JosephM.Xrm.CalculatedFields.Plugins.Services
                 PrependStringFieldName = Fields.jmcg_calculatedfield_.jmcg_concatenatefield3prepend,
                 PrependStringSpacedFieldName = Fields.jmcg_calculatedfield_.jmcg_concatenatefield3prependspaced,
                 AppendStringFieldName = Fields.jmcg_calculatedfield_.jmcg_concatenatefield3append,
-                AppendStringSpacedFieldName = Fields.jmcg_calculatedfield_.jmcg_concatenatefield3appendspaced
+                AppendStringSpacedFieldName = Fields.jmcg_calculatedfield_.jmcg_concatenatefield3appendspaced,
+                IfEmptySetFieldEmptyFieldName = Fields.jmcg_calculatedfield_.jmcg_concatenatefield3ifemptyleavefieldempty
             },
             new ConcatenateFieldSetting
             {
@@ -1142,7 +1154,8 @@ namespace JosephM.Xrm.CalculatedFields.Plugins.Services
                 PrependStringFieldName = Fields.jmcg_calculatedfield_.jmcg_concatenatefield4prepend,
                 PrependStringSpacedFieldName = Fields.jmcg_calculatedfield_.jmcg_concatenatefield4prependspaced,
                 AppendStringFieldName = Fields.jmcg_calculatedfield_.jmcg_concatenatefield4append,
-                AppendStringSpacedFieldName = Fields.jmcg_calculatedfield_.jmcg_concatenatefield4appendspaced
+                AppendStringSpacedFieldName = Fields.jmcg_calculatedfield_.jmcg_concatenatefield4appendspaced,
+                IfEmptySetFieldEmptyFieldName = Fields.jmcg_calculatedfield_.jmcg_concatenatefield4ifemptyleavefieldempty
             },
             new ConcatenateFieldSetting
             {
@@ -1151,7 +1164,8 @@ namespace JosephM.Xrm.CalculatedFields.Plugins.Services
                 PrependStringFieldName = Fields.jmcg_calculatedfield_.jmcg_concatenatefield5prepend,
                 PrependStringSpacedFieldName = Fields.jmcg_calculatedfield_.jmcg_concatenatefield5prependspaced,
                 AppendStringFieldName = Fields.jmcg_calculatedfield_.jmcg_concatenatefield5append,
-                AppendStringSpacedFieldName = Fields.jmcg_calculatedfield_.jmcg_concatenatefield5appendspaced
+                AppendStringSpacedFieldName = Fields.jmcg_calculatedfield_.jmcg_concatenatefield5appendspaced,
+                IfEmptySetFieldEmptyFieldName = Fields.jmcg_calculatedfield_.jmcg_concatenatefield5ifemptyleavefieldempty
             },
             new ConcatenateFieldSetting
             {
@@ -1160,7 +1174,8 @@ namespace JosephM.Xrm.CalculatedFields.Plugins.Services
                 PrependStringFieldName = Fields.jmcg_calculatedfield_.jmcg_concatenatefield6prepend,
                 PrependStringSpacedFieldName = Fields.jmcg_calculatedfield_.jmcg_concatenatefield6prependspaced,
                 AppendStringFieldName = Fields.jmcg_calculatedfield_.jmcg_concatenatefield6append,
-                AppendStringSpacedFieldName = Fields.jmcg_calculatedfield_.jmcg_concatenatefield6appendspaced
+                AppendStringSpacedFieldName = Fields.jmcg_calculatedfield_.jmcg_concatenatefield6appendspaced,
+                IfEmptySetFieldEmptyFieldName = Fields.jmcg_calculatedfield_.jmcg_concatenatefield6ifemptyleavefieldempty
             },
         };
     }

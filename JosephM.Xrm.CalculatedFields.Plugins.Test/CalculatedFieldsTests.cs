@@ -1321,6 +1321,61 @@ namespace JosephM.Xrm.CalculatedFields.Plugins.Test
         }
 
         [TestMethod]
+        public void CalculatedFieldsConcatenateIfEmptySetEmotyPluginTest()
+        {
+            DeleteAllCalculatedFields();
+
+            var concatenator = CreateTestRecord(Entities.jmcg_calculatedfield, new Dictionary<string, object>
+                {
+                    { Fields.jmcg_calculatedfield_.jmcg_type, new OptionSetValue(OptionSets.CalculatedField.Type.Concatenate) },
+                    { Fields.jmcg_calculatedfield_.jmcg_name, "Test Concatenatation" },
+                    { Fields.jmcg_calculatedfield_.jmcg_entitytype, Entities.jmcg_testentity },
+                    { Fields.jmcg_calculatedfield_.jmcg_field, Fields.jmcg_testentity_.jmcg_name },
+                    { Fields.jmcg_calculatedfield_.jmcg_concatenatefield1, Fields.jmcg_testentity_.jmcg_string },
+                    { Fields.jmcg_calculatedfield_.jmcg_concatenatefield1prepend, "Name" },
+                    { Fields.jmcg_calculatedfield_.jmcg_concatenatefield1prependspaced, true },
+                    { Fields.jmcg_calculatedfield_.jmcg_concatenatefield1append, "-" },
+                    { Fields.jmcg_calculatedfield_.jmcg_concatenatefield1appendspaced, true },
+                    { Fields.jmcg_calculatedfield_.jmcg_concatenatefield2, Fields.jmcg_testentity_.jmcg_date },
+                    { Fields.jmcg_calculatedfield_.jmcg_concatenatefield2formatstring, "yyyy-MM-dd" },
+                    { Fields.jmcg_calculatedfield_.jmcg_concatenatefield2prepend, "(" },
+                    { Fields.jmcg_calculatedfield_.jmcg_concatenatefield2append, ")" },
+                    { Fields.jmcg_calculatedfield_.jmcg_concatenatefield3, Fields.jmcg_testentity_.jmcg_integer },
+                    { Fields.jmcg_calculatedfield_.jmcg_concatenatefield3ifemptyleavefieldempty, true },
+                    { Fields.jmcg_calculatedfield_.jmcg_concatenatefield4, Fields.jmcg_testentity_.jmcg_account },
+                    { Fields.jmcg_calculatedfield_.jmcg_concatenatefield5, Fields.jmcg_testentity_.jmcg_boolean },
+                    { Fields.jmcg_calculatedfield_.jmcg_concatenatefield6, Fields.jmcg_testentity_.createdon },{ Fields.jmcg_calculatedfield_.jmcg_concatenatefield6formatstring, "dd/MM/yyyy" },
+                    { Fields.jmcg_calculatedfield_.jmcg_separatortype, new OptionSetValue(OptionSets.CalculatedField.SeparatorType.Space) },
+                });
+
+            var testRecord = CreateTestRecord(Entities.jmcg_testentity, new Dictionary<string, object>()
+            {
+                { Fields.jmcg_testentity_.jmcg_string, "Joseph" },
+                { Fields.jmcg_testentity_.jmcg_date, DateTime.UtcNow },
+                { Fields.jmcg_testentity_.jmcg_integer, 100 },
+                { Fields.jmcg_testentity_.jmcg_account, TestContactAccount.ToEntityReference() },
+                { Fields.jmcg_testentity_.jmcg_boolean, true },
+            });
+            var calculatedName = testRecord.GetStringField(Fields.jmcg_testentity_.jmcg_name);
+            var expectedName = $"Name Joseph - ({LocalisationService.TargetToday.ToString("yyyy-MM-dd")}) 100 {TestContactAccount.GetStringField(Fields.account_.name)} Yes {LocalisationService.TargetToday.ToString("dd/MM/yyyy")}";
+            Assert.AreEqual(expectedName, calculatedName);
+
+            testRecord.SetField(Fields.jmcg_testentity_.jmcg_integer, null);
+            testRecord = UpdateFieldsAndRetreive(testRecord, Fields.jmcg_testentity_.jmcg_integer);
+
+            calculatedName = testRecord.GetStringField(Fields.jmcg_testentity_.jmcg_name);
+            Assert.IsNull(calculatedName);
+
+            testRecord.SetField(Fields.jmcg_testentity_.jmcg_integer, 500);
+            testRecord = UpdateFieldsAndRetreive(testRecord, Fields.jmcg_testentity_.jmcg_integer);
+            calculatedName = testRecord.GetStringField(Fields.jmcg_testentity_.jmcg_name);
+            expectedName = $"Name Joseph - ({LocalisationService.TargetToday.ToString("yyyy-MM-dd")}) 500 {TestContactAccount.GetStringField(Fields.account_.name)} Yes {LocalisationService.TargetToday.ToString("dd/MM/yyyy")}";
+            Assert.AreEqual(expectedName, calculatedName);
+
+            var testRecordNonePopulated = CreateTestRecord(Entities.jmcg_testentity);
+        }
+
+        [TestMethod]
         public void CalculatedFieldsConcatenateAnnotationsPluginTest()
         {
             DeleteAllCalculatedFields();

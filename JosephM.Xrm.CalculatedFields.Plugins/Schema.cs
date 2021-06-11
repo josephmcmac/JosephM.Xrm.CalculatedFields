@@ -3642,6 +3642,7 @@ namespace Schema
 			public const string jmcg_concatenatefield1append = "jmcg_concatenatefield1append";
 			public const string jmcg_concatenatefield1appendspaced = "jmcg_concatenatefield1appendspaced";
 			public const string jmcg_concatenatefield1formatstring = "jmcg_concatenatefield1formatstring";
+			public const string jmcg_concatenatefield1ifemptyleavefieldempty = "jmcg_concatenatefield1ifemptyleavefieldempty";
 			public const string jmcg_concatenatefield1prepend = "jmcg_concatenatefield1prepend";
 			public const string jmcg_concatenatefield1prependspaced = "jmcg_concatenatefield1prependspaced";
 			public const string jmcg_concatenatefield1selectionfield = "jmcg_concatenatefield1selectionfield";
@@ -3649,6 +3650,7 @@ namespace Schema
 			public const string jmcg_concatenatefield2append = "jmcg_concatenatefield2append";
 			public const string jmcg_concatenatefield2appendspaced = "jmcg_concatenatefield2appendspaced";
 			public const string jmcg_concatenatefield2formatstring = "jmcg_concatenatefield2formatstring";
+			public const string jmcg_concatenatefield2ifemptyleavefieldempty = "jmcg_concatenatefield2ifemptyleavefieldempty";
 			public const string jmcg_concatenatefield2prepend = "jmcg_concatenatefield2prepend";
 			public const string jmcg_concatenatefield2prependspaced = "jmcg_concatenatefield2prependspaced";
 			public const string jmcg_concatenatefield2selectionfield = "jmcg_concatenatefield2selectionfield";
@@ -3656,6 +3658,7 @@ namespace Schema
 			public const string jmcg_concatenatefield3append = "jmcg_concatenatefield3append";
 			public const string jmcg_concatenatefield3appendspaced = "jmcg_concatenatefield3appendspaced";
 			public const string jmcg_concatenatefield3formatstring = "jmcg_concatenatefield3formatstring";
+			public const string jmcg_concatenatefield3ifemptyleavefieldempty = "jmcg_concatenatefield3ifemptyleavefieldempty";
 			public const string jmcg_concatenatefield3prepend = "jmcg_concatenatefield3prepend";
 			public const string jmcg_concatenatefield3prependspaced = "jmcg_concatenatefield3prependspaced";
 			public const string jmcg_concatenatefield3selectionfield = "jmcg_concatenatefield3selectionfield";
@@ -3663,6 +3666,7 @@ namespace Schema
 			public const string jmcg_concatenatefield4append = "jmcg_concatenatefield4append";
 			public const string jmcg_concatenatefield4appendspaced = "jmcg_concatenatefield4appendspaced";
 			public const string jmcg_concatenatefield4formatstring = "jmcg_concatenatefield4formatstring";
+			public const string jmcg_concatenatefield4ifemptyleavefieldempty = "jmcg_concatenatefield4ifemptyleavefieldempty";
 			public const string jmcg_concatenatefield4prepend = "jmcg_concatenatefield4prepend";
 			public const string jmcg_concatenatefield4prependspaced = "jmcg_concatenatefield4prependspaced";
 			public const string jmcg_concatenatefield4selectionfield = "jmcg_concatenatefield4selectionfield";
@@ -3670,6 +3674,7 @@ namespace Schema
 			public const string jmcg_concatenatefield5append = "jmcg_concatenatefield5append";
 			public const string jmcg_concatenatefield5appendspaced = "jmcg_concatenatefield5appendspaced";
 			public const string jmcg_concatenatefield5formatstring = "jmcg_concatenatefield5formatstring";
+			public const string jmcg_concatenatefield5ifemptyleavefieldempty = "jmcg_concatenatefield5ifemptyleavefieldempty";
 			public const string jmcg_concatenatefield5prepend = "jmcg_concatenatefield5prepend";
 			public const string jmcg_concatenatefield5prependspaced = "jmcg_concatenatefield5prependspaced";
 			public const string jmcg_concatenatefield5selectionfield = "jmcg_concatenatefield5selectionfield";
@@ -3677,6 +3682,7 @@ namespace Schema
 			public const string jmcg_concatenatefield6append = "jmcg_concatenatefield6append";
 			public const string jmcg_concatenatefield6appendspaced = "jmcg_concatenatefield6appendspaced";
 			public const string jmcg_concatenatefield6formatstring = "jmcg_concatenatefield6formatstring";
+			public const string jmcg_concatenatefield6ifemptyleavefieldempty = "jmcg_concatenatefield6ifemptyleavefieldempty";
 			public const string jmcg_concatenatefield6prepend = "jmcg_concatenatefield6prepend";
 			public const string jmcg_concatenatefield6prependspaced = "jmcg_concatenatefield6prependspaced";
 			public const string jmcg_concatenatefield6selectionfield = "jmcg_concatenatefield6selectionfield";
