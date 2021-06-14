@@ -51,22 +51,24 @@ CalculatedJs.options = {
 CalculatedJs.RunOnLoad = function () {
     calculatedPageUtility.CommonForm(CalculatedJs.RunOnChange, CalculatedJs.RunOnSave);
 
+    var allFieldTypes = ["String", "Integer", "Money", "Decimal", "Double", "Boolean", "UniqueIdentifier", "Memo", "DateTime", "Picklist", "Lookup", "Customer", "Owner"];
+
     CalculatedJs.PopulateTypeLists(["jmcg_entitytypeselectionfield", "jmcg_entitytyperolledupselectionfield", "jmcg_referencedtypeselectionfield"]);
-    CalculatedJs.AddFieldSelectionPicklist(null, "jmcg_entitytype", "jmcg_fieldselectionfield", "jmcg_field", ["String", "Integer", "Money", "Decimal", "Double", "Boolean", "Memo", "DateTime"]);
+    CalculatedJs.AddFieldSelectionPicklist(null, "jmcg_entitytype", "jmcg_fieldselectionfield", "jmcg_field", allFieldTypes);
     CalculatedJs.AddFieldSelectionPicklist(CalculatedJs.options.Type.Rollup, "jmcg_entitytyperolledup", "jmcg_fieldreferencingselectionfield", "jmcg_fieldreferencing",["Lookup", "Customer", "Owner"]);
-    CalculatedJs.AddFieldSelectionPicklist(CalculatedJs.options.Type.Rollup, "jmcg_entitytyperolledup", "jmcg_fieldrolledupselectionfield", "jmcg_fieldrolledup", ["String", "Integer", "Money", "Decimal", "Double", "Boolean", "UniqueIdentifier", "Lookup", "Memo", "DateTime", "Lookup", "Customer", "Owner" ]);
+    CalculatedJs.AddFieldSelectionPicklist(CalculatedJs.options.Type.Rollup, "jmcg_entitytyperolledup", "jmcg_fieldrolledupselectionfield", "jmcg_fieldrolledup", allFieldTypes);
     CalculatedJs.AddFieldSelectionPicklist(CalculatedJs.options.Type.Rollup, "jmcg_entitytyperolledup", "jmcg_orderrollupbyfieldselectionfield", "jmcg_orderrollupbyfield", null);
-    CalculatedJs.AddFieldSelectionPicklist(CalculatedJs.options.Type.Concatenate, "jmcg_entitytype", "jmcg_concatenatefield1selectionfield", "jmcg_concatenatefield1", null);
-    CalculatedJs.AddFieldSelectionPicklist(CalculatedJs.options.Type.Concatenate, "jmcg_entitytype", "jmcg_concatenatefield2selectionfield", "jmcg_concatenatefield2", null);
-    CalculatedJs.AddFieldSelectionPicklist(CalculatedJs.options.Type.Concatenate, "jmcg_entitytype", "jmcg_concatenatefield3selectionfield", "jmcg_concatenatefield3", null);
-    CalculatedJs.AddFieldSelectionPicklist(CalculatedJs.options.Type.Concatenate, "jmcg_entitytype", "jmcg_concatenatefield4selectionfield", "jmcg_concatenatefield4", null);
-    CalculatedJs.AddFieldSelectionPicklist(CalculatedJs.options.Type.Concatenate, "jmcg_entitytype", "jmcg_concatenatefield5selectionfield", "jmcg_concatenatefield5", null);
-    CalculatedJs.AddFieldSelectionPicklist(CalculatedJs.options.Type.Concatenate, "jmcg_entitytype", "jmcg_concatenatefield6selectionfield", "jmcg_concatenatefield6", null);
+    CalculatedJs.AddFieldSelectionPicklist(CalculatedJs.options.Type.Concatenate, "jmcg_entitytype", "jmcg_concatenatefield1selectionfield", "jmcg_concatenatefield1", allFieldTypes);
+    CalculatedJs.AddFieldSelectionPicklist(CalculatedJs.options.Type.Concatenate, "jmcg_entitytype", "jmcg_concatenatefield2selectionfield", "jmcg_concatenatefield2", allFieldTypes);
+    CalculatedJs.AddFieldSelectionPicklist(CalculatedJs.options.Type.Concatenate, "jmcg_entitytype", "jmcg_concatenatefield3selectionfield", "jmcg_concatenatefield3", allFieldTypes);
+    CalculatedJs.AddFieldSelectionPicklist(CalculatedJs.options.Type.Concatenate, "jmcg_entitytype", "jmcg_concatenatefield4selectionfield", "jmcg_concatenatefield4", allFieldTypes);
+    CalculatedJs.AddFieldSelectionPicklist(CalculatedJs.options.Type.Concatenate, "jmcg_entitytype", "jmcg_concatenatefield5selectionfield", "jmcg_concatenatefield5", allFieldTypes);
+    CalculatedJs.AddFieldSelectionPicklist(CalculatedJs.options.Type.Concatenate, "jmcg_entitytype", "jmcg_concatenatefield6selectionfield", "jmcg_concatenatefield6", allFieldTypes);
     CalculatedJs.AddFieldSelectionPicklist(CalculatedJs.options.Type.AddTime, "jmcg_entitytype", "jmcg_addtimetofieldselectionfield", "jmcg_addtimetofield", ["DateTime"]);
     CalculatedJs.AddFieldSelectionPicklist(CalculatedJs.options.Type.TimeTaken, "jmcg_entitytype", "jmcg_timetakenstartfieldselectionfield", "jmcg_timetakenstartfield", ["DateTime"]);
     CalculatedJs.AddFieldSelectionPicklist(CalculatedJs.options.Type.TimeTaken, "jmcg_entitytype", "jmcg_timetakenendfieldselectionfield", "jmcg_timetakenendfield", ["DateTime"]);
     CalculatedJs.AddFieldSelectionPicklist(CalculatedJs.options.Type.Lookup, "jmcg_entitytype", "jmcg_lookupfieldselectionfield", "jmcg_lookupfield", ["Lookup", "Customer", "Owner"]);
-    CalculatedJs.AddFieldSelectionPicklist(CalculatedJs.options.Type.Lookup, "jmcg_referencedtype", "jmcg_referencedtypetargetfieldselectionfield", "jmcg_referencedtypetargetfield", null);
+    CalculatedJs.AddFieldSelectionPicklist(CalculatedJs.options.Type.Lookup, "jmcg_referencedtype", "jmcg_referencedtypetargetfieldselectionfield", "jmcg_referencedtypetargetfield", allFieldTypes);
 
     CalculatedJs.RefreshVisibility();
 };
