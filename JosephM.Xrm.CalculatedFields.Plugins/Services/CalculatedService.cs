@@ -527,7 +527,7 @@ namespace JosephM.Xrm.CalculatedFields.Plugins.Services
                     }
                     var rollupService = new CalculatedRollupService(XrmService, rollups);
                     rollupService.SetInitialValues(plugin);
-                    rollupService.ExecuteDependencyPlugin(plugin);
+                    rollupService.ExecuteRollupPlugin(plugin);
                 }
             }
             var lookupCalculations = calculatedConfigs

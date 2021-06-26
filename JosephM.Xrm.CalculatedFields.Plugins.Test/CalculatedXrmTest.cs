@@ -1,6 +1,5 @@
 ﻿using JosephM.Xrm.CalculatedFields.Plugins.Localisation;
 using JosephM.Xrm.CalculatedFields.Plugins.Services;
-using JosephM.Xrm.CalculatedFields.Plugins.SharePoint;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 using System.Collections.Generic;
@@ -59,17 +58,6 @@ namespace JosephM.Xrm.CalculatedFields.Plugins.Test
                 if (_service == null)
                     _service = new CalculatedService(XrmService, CalculatedSettings, LocalisationService);
                 return _service;
-            }
-        }
-
-        private CalculatedSharepointService _sharePointService;
-        public CalculatedSharepointService CalculatedSharepointService
-        {
-            get
-            {
-                if (_sharePointService == null)
-                    _sharePointService = new CalculatedSharepointService(XrmService, new CalculatedSharePointSettings(XrmService));
-                return _sharePointService;
             }
         }
 

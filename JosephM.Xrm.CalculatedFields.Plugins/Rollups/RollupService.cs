@@ -1,7 +1,6 @@
-﻿using Microsoft.Xrm.Sdk;
+﻿using JosephM.Xrm.CalculatedFields.Plugins.Xrm;
+using Microsoft.Xrm.Sdk;
 using Microsoft.Xrm.Sdk.Query;
-using JosephM.Xrm.CalculatedFields.Plugins.Core;
-using JosephM.Xrm.CalculatedFields.Plugins.Xrm;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -37,80 +36,6 @@ namespace JosephM.Xrm.CalculatedFields.Plugins.Rollups
             }
         }
 
-        private void ExecuteDependencyPluginRefresh(XrmEntityPlugin plugin, LookupRollup rollup)
-        {
-            var idsRequireRefresh = new List<Guid>();
-
-            var isDependencyChanging = false;
-
-            if (
-                (plugin.MessageName == PluginMessage.Create || plugin.MessageName == PluginMessage.Update ||
-                 plugin.MessageName == PluginMessage.Delete)
-                && plugin.Stage == PluginStage.PostEvent
-                && plugin.Mode == PluginMode.Synchronous
-                )
-            {
-                switch (plugin.MessageName)
-                {
-                    case PluginMessage.Delete:
-                        {
-                            isDependencyChanging = plugin.PreImageEntity.Contains(rollup.LookupName) &&
-                                                   plugin.MeetsFilterChanging(rollup.Filter);
-                            break;
-                        }
-                    case PluginMessage.Update:
-                        {
-                            if (plugin.FieldChanging(rollup.LookupName)
-                                || (rollup.FieldRolledup != null && plugin.FieldChanging(rollup.FieldRolledup)))
-                                isDependencyChanging = true;
-                            else if (rollup.OrderByField != null && plugin.FieldChanging(rollup.OrderByField))
-                                isDependencyChanging = true;
-                            else
-                                isDependencyChanging = plugin.MeetsFilterChanging(rollup.Filter);
-                            break;
-                        }
-                    case PluginMessage.Create:
-                        {
-                            isDependencyChanging =
-                                plugin.TargetEntity.Contains(rollup.LookupName)
-                                && (rollup.FieldRolledup == null || plugin.TargetEntity.Contains(rollup.FieldRolledup))
-                                && plugin.MeetsFilterChanging(rollup.Filter);
-                            break;
-                        }
-                }
-                if (isDependencyChanging)
-                {
-                    object preImageLookup = plugin.PreImageEntity.GetLookupGuid(rollup.LookupName);
-                    object contextLookup = null;
-                    if (plugin.MessageName == PluginMessage.Create || plugin.MessageName == PluginMessage.Update)
-                        contextLookup = plugin.TargetEntity.GetLookupGuid(rollup.LookupName);
-                    var processPreImage = false;
-                    var processContextGuid = false;
-                    //If they aren't the same do both
-                    if (!XrmEntity.FieldsEqual(preImageLookup, contextLookup))
-                    {
-                        processPreImage = true;
-                        processContextGuid = true;
-                    }
-                    //else just do the first not null one
-                    else
-                    {
-                        if (preImageLookup != null)
-                            processPreImage = true;
-                        else
-                            processContextGuid = true;
-                    }
-                    if (processPreImage && preImageLookup != null)
-                        idsRequireRefresh.Add((Guid)preImageLookup);
-                    if (processContextGuid && contextLookup != null)
-                        idsRequireRefresh.Add((Guid)contextLookup);
-                }
-            }
-            foreach (var id in idsRequireRefresh)
-            {
-                RefreshRollup(id, rollup);
-            }
-        }
         public void RefreshRollup(Guid id, LookupRollup rollup)
         {
             var newValue = GetRollup(rollup, id);
@@ -122,51 +47,26 @@ namespace JosephM.Xrm.CalculatedFields.Plugins.Rollups
             return new[] { RollupType.Count, RollupType.Sum }.Contains(type);
         }
 
-        private void ExecuteDependencyPluginRefreshForDifferenceNotSupported(XrmEntityPlugin plugin)
-        {
-            var dictionaryForDifferences = new Dictionary<string, Dictionary<Guid, List<KeyValuePair<string, object>>>>();
-
-            var RollupsToProcess = GetRollupsForRolledupType(plugin.TargetType)
-                .Where(a => !AllowsDifferenceChange(a.RollupType))
-                .ToArray();
-            foreach (var rollup in RollupsToProcess)
-            {
-                ExecuteDependencyPluginRefresh(plugin, rollup);
-            }
-        }
-
         /// <summary>
-        /// Processes changes in the record type Rollup
-        /// WARNING some types of Rollups have potential for deadlocks!
+        /// Processes plugin for a type type rolled up
         /// </summary>
         /// <param name="plugin"></param>
-        public void ExecuteDependencyPlugin(XrmEntityPlugin plugin)
+        public void ExecuteRollupPlugin(XrmEntityPlugin plugin)
         {
-            ExecuteDependencyPluginDifferences(plugin);
-            ExecuteDependencyPluginRefreshForDifferenceNotSupported(plugin);
-        }
-
-        private void ExecuteDependencyPluginDifferences(XrmEntityPlugin plugin)
-        {
-            var dictionaryForDifferences = new Dictionary<string, Dictionary<Guid, List<KeyValuePair<string, object>>>>();
-
-            var rollupsToProcess = GetRollupsForRolledupType(plugin.TargetType)
-                .Where(a => AllowsDifferenceChange(a.RollupType))
-                .ToArray();
-
             if (plugin.IsMessage(PluginMessage.Create, PluginMessage.Update, PluginMessage.Delete)
                 && plugin.IsStage(PluginStage.PostEvent)
                 && plugin.IsMode(PluginMode.Synchronous))
             {
-                //this dictionary will capture the changes we need to apply to parent records for all Rollups
-                //type -> ids -> fields . values
-                Action<string, Guid, string, object> addDifferenceToApply = (type, id, field, val) =>
+                var rollupsToProcess = GetRollupsForRolledupType(plugin.TargetType).ToArray();
+                var dictionaryForDifferences = new Dictionary<string, Dictionary<Guid, List<UpdateMeta>>>();
+
+                Action<string, Guid, string, object, LookupRollup> addValueToApply = (type, id, field, val, rollup) =>
                 {
                     if (!dictionaryForDifferences.ContainsKey(type))
-                        dictionaryForDifferences.Add(type, new Dictionary<Guid, List<KeyValuePair<string, object>>>());
+                        dictionaryForDifferences.Add(type, new Dictionary<Guid, List<UpdateMeta>>());
                     if (!dictionaryForDifferences[type].ContainsKey(id))
-                        dictionaryForDifferences[type].Add(id, new List<KeyValuePair<string, object>>());
-                    dictionaryForDifferences[type][id].Add(new KeyValuePair<string, object>(field, val));
+                        dictionaryForDifferences[type].Add(id, new List<UpdateMeta>());
+                    dictionaryForDifferences[type][id].Add(new UpdateMeta(field, rollup, val));
                 };
 
                 foreach (var rollup in rollupsToProcess)
@@ -178,129 +78,197 @@ namespace JosephM.Xrm.CalculatedFields.Plugins.Rollups
                         : XrmEntity.MeetsFilter(plugin.GetField, rollup.Filter);
                     var linkedIdBefore = XrmEntity.GetLookupType(plugin.GetFieldFromPreImage(rollup.LookupName)) == rollup.RecordTypeWithRollup
                         ? plugin.GetLookupGuidPreImage(rollup.LookupName)
-                        : (Guid?)null;
+                        : null;
                     var linkedIdAfter = plugin.MessageName == PluginMessage.Delete || XrmEntity.GetLookupType(plugin.GetField(rollup.LookupName)) != rollup.RecordTypeWithRollup
-                        ? (Guid?)null
+                        ? null
                         : plugin.GetLookupGuid(rollup.LookupName);
-                    var isValueChanging = plugin.FieldChanging(rollup.FieldRolledup);
+                    var isValueChanging = rollup.FieldRolledup != null && plugin.FieldChanging(rollup.FieldRolledup);
+                    var isOrderByChanging = rollup.OrderByField != null && plugin.FieldChanging(rollup.OrderByField);
 
-                    //this covers all scenarios I thought of which require changing the value in a parent record
-                    if (linkedIdBefore.HasValue && linkedIdBefore == linkedIdAfter)
+                    if (AllowsDifferenceChange(rollup.RollupType))
                     {
-                        //the same record linked before and after
-                        if (metConditionsBefore && meetsConditionsAfter)
+                        //this covers scenarios which require changing the value in a parent record
+                        if (linkedIdBefore.HasValue && linkedIdBefore == linkedIdAfter)
                         {
-                            //if part of Rollup before and after
-                            if (isValueChanging)
+                            //the same record linked before and after
+                            if (metConditionsBefore && meetsConditionsAfter)
                             {
-                                //and the value is changing then apply difference
+                                //if part of Rollup before and after
+                                if (isValueChanging)
+                                {
+                                    //and the value is changing then apply difference
+                                    if (rollup.RollupType == RollupType.Sum)
+                                    {
+                                        addValueToApply(rollup.RecordTypeWithRollup, linkedIdAfter.Value, rollup.RollupField, GetDifferenceToApply(plugin.GetFieldFromPreImage(rollup.FieldRolledup), plugin.GetField(rollup.FieldRolledup)), rollup);
+                                    }
+                                    else if (rollup.RollupType == RollupType.Count)
+                                    {
+                                        //for count only adjust if changing between null and not null
+                                        if (plugin.GetFieldFromPreImage(rollup.FieldRolledup) == null)
+                                        {
+                                            addValueToApply(rollup.RecordTypeWithRollup, linkedIdAfter.Value, rollup.RollupField, 1, rollup);
+                                        }
+                                        else if (plugin.GetField(rollup.FieldRolledup) == null)
+                                        {
+                                            addValueToApply(rollup.RecordTypeWithRollup, linkedIdAfter.Value, rollup.RollupField, -1, rollup);
+                                        }
+                                    }
+                                }
+                            }
+                            if (!metConditionsBefore && meetsConditionsAfter)
+                            {
+                                //if was not part of Rollup before but is now apply the entire value
                                 if (rollup.RollupType == RollupType.Sum)
                                 {
-                                    addDifferenceToApply(rollup.RecordTypeWithRollup, linkedIdAfter.Value, rollup.RollupField, GetDifferenceToApply(plugin.GetFieldFromPreImage(rollup.FieldRolledup), plugin.GetField(rollup.FieldRolledup)));
+                                    addValueToApply(rollup.RecordTypeWithRollup, linkedIdAfter.Value, rollup.RollupField, plugin.GetField(rollup.FieldRolledup), rollup);
                                 }
                                 else if (rollup.RollupType == RollupType.Count)
                                 {
-                                    //for count only adjust if changing between null and not null
-                                    if (plugin.GetFieldFromPreImage(rollup.FieldRolledup) == null)
-                                    {
-                                        addDifferenceToApply(rollup.RecordTypeWithRollup, linkedIdAfter.Value, rollup.RollupField, 1);
-                                    }
-                                    else if (plugin.GetField(rollup.FieldRolledup) == null)
-                                    {
-                                        addDifferenceToApply(rollup.RecordTypeWithRollup, linkedIdAfter.Value, rollup.RollupField, -1);
-                                    }
+                                    addValueToApply(rollup.RecordTypeWithRollup, linkedIdAfter.Value, rollup.RollupField, 1, rollup);
+                                }
+                            }
+                            if (metConditionsBefore && !meetsConditionsAfter)
+                            {
+                                //if was part of Rollup before but not now apply the entire value negative
+                                if (rollup.RollupType == RollupType.Sum)
+                                {
+                                    addValueToApply(rollup.RecordTypeWithRollup, linkedIdAfter.Value, rollup.RollupField, GetNegative(plugin.GetFieldFromPreImage(rollup.FieldRolledup)), rollup);
+                                }
+                                else if (rollup.RollupType == RollupType.Count)
+                                {
+                                    addValueToApply(rollup.RecordTypeWithRollup, linkedIdAfter.Value, rollup.RollupField, -1, rollup);
                                 }
                             }
                         }
-                        if (!metConditionsBefore && meetsConditionsAfter)
+                        else
                         {
-                            //if was not part of Rollup before but is now apply the entire value
-                            if (rollup.RollupType == RollupType.Sum)
+                            //different parent linked before and after
+                            if (linkedIdBefore.HasValue && metConditionsBefore)
                             {
-                                addDifferenceToApply(rollup.RecordTypeWithRollup, linkedIdAfter.Value, rollup.RollupField, plugin.GetField(rollup.FieldRolledup));
+                                //if was part of previous linked records Rollup then negate the previous value
+                                if (rollup.RollupType == RollupType.Sum)
+                                {
+                                    addValueToApply(rollup.RecordTypeWithRollup, linkedIdBefore.Value, rollup.RollupField, GetNegative(plugin.GetFieldFromPreImage(rollup.FieldRolledup)), rollup);
+                                }
+                                else if (rollup.RollupType == RollupType.Count)
+                                {
+                                    addValueToApply(rollup.RecordTypeWithRollup, linkedIdBefore.Value, rollup.RollupField, -1, rollup);
+                                }
                             }
-                            else if (rollup.RollupType == RollupType.Count)
+                            if (linkedIdAfter.HasValue && meetsConditionsAfter)
                             {
-                                addDifferenceToApply(rollup.RecordTypeWithRollup, linkedIdAfter.Value, rollup.RollupField, 1);
-                            }
-                        }
-                        if (metConditionsBefore && !meetsConditionsAfter)
-                        {
-                            //if was part of Rollup before but not now apply the entire value negative
-                            if (rollup.RollupType == RollupType.Sum)
-                            {
-                                addDifferenceToApply(rollup.RecordTypeWithRollup, linkedIdAfter.Value, rollup.RollupField, GetNegative(plugin.GetFieldFromPreImage(rollup.FieldRolledup)));
-                            }
-                            else if (rollup.RollupType == RollupType.Count)
-                            {
-                                addDifferenceToApply(rollup.RecordTypeWithRollup, linkedIdAfter.Value, rollup.RollupField, -1);
+                                //if part of new linked records Rollup then apply the entire value
+                                if (rollup.RollupType == RollupType.Sum)
+                                {
+                                    addValueToApply(rollup.RecordTypeWithRollup, linkedIdAfter.Value, rollup.RollupField, plugin.GetField(rollup.FieldRolledup), rollup);
+                                }
+                                else if (rollup.RollupType == RollupType.Count)
+                                {
+                                    addValueToApply(rollup.RecordTypeWithRollup, linkedIdAfter.Value, rollup.RollupField, 1, rollup);
+                                }
                             }
                         }
                     }
                     else
                     {
-                        //different parent linked before and after
-                        if (linkedIdBefore.HasValue && metConditionsBefore)
+                        //these ones just recalculate on the parent record(s)
+                        var isDependencyChanging = false;
+                        switch (plugin.MessageName)
                         {
-                            //if was part of previous linked records Rollup then negate the previous value
-                            if (rollup.RollupType == RollupType.Sum)
-                            {
-                                addDifferenceToApply(rollup.RecordTypeWithRollup, linkedIdBefore.Value, rollup.RollupField, GetNegative(plugin.GetFieldFromPreImage(rollup.FieldRolledup)));
-                            }
-                            else if (rollup.RollupType == RollupType.Count)
-                            {
-                                addDifferenceToApply(rollup.RecordTypeWithRollup, linkedIdBefore.Value, rollup.RollupField, -1);
-                            }
+                            case PluginMessage.Delete:
+                                {
+                                    isDependencyChanging = linkedIdBefore.HasValue && metConditionsBefore;
+                                    break;
+                                }
+                            case PluginMessage.Update:
+                                {
+                                    if (linkedIdBefore != linkedIdAfter || isValueChanging)
+                                        isDependencyChanging = true;
+                                    else if (isOrderByChanging)
+                                        isDependencyChanging = true;
+                                    else
+                                        isDependencyChanging = metConditionsBefore != meetsConditionsAfter;
+                                    break;
+                                }
+                            case PluginMessage.Create:
+                                {
+                                    isDependencyChanging = linkedIdAfter.HasValue
+                                        && (rollup.FieldRolledup == null || isValueChanging)
+                                        && meetsConditionsAfter;
+                                    break;
+                                }
                         }
-                        if (linkedIdAfter.HasValue && meetsConditionsAfter)
+                        if (isDependencyChanging)
                         {
-                            //if part of new linked records Rollup then apply the entire value
-                            if (rollup.RollupType == RollupType.Sum)
+                            var processPreReferenced = false;
+                            var processPostReferenced = false;
+                            //If they aren't the same do both
+                            if (!XrmEntity.FieldsEqual(linkedIdBefore, linkedIdAfter))
                             {
-                                addDifferenceToApply(rollup.RecordTypeWithRollup, linkedIdAfter.Value, rollup.RollupField, plugin.GetField(rollup.FieldRolledup));
+                                processPreReferenced = true;
+                                processPostReferenced = true;
                             }
-                            else if (rollup.RollupType == RollupType.Count)
+                            //else just do the first not null one
+                            else
                             {
-                                addDifferenceToApply(rollup.RecordTypeWithRollup, linkedIdAfter.Value, rollup.RollupField, 1);
+                                if (linkedIdBefore.HasValue)
+                                    processPreReferenced = true;
+                                else
+                                    processPostReferenced = true;
+                            }
+                            if (processPreReferenced && linkedIdBefore.HasValue)
+                            {
+                                addValueToApply(rollup.RecordTypeWithRollup, linkedIdBefore.Value, rollup.RollupField, null, rollup);
+                            }
+                            if (processPostReferenced && linkedIdAfter.HasValue)
+                            {
+                                addValueToApply(rollup.RecordTypeWithRollup, linkedIdAfter.Value, rollup.RollupField, null, rollup);
                             }
                         }
                     }
                 }
-            }
-            if (dictionaryForDifferences.Any())
-            {
-                plugin.Trace("Updating Rollup Differences");
+
+                //apply all required changes to parents we captured
+                //type -> ids -> fields . values
                 foreach (var item in dictionaryForDifferences)
                 {
-                    foreach (var field in item.Value)
+                    var targetType = item.Key;
+                    foreach (var idUpdates in item.Value)
                     {
-                        foreach (var value in field.Value)
+                        var id = idUpdates.Key;
+                        //lock the parent record then retreive it
+                        plugin.XrmService.SetField(targetType, id, "modifiedon", DateTime.UtcNow);
+                        var fieldsForUpdating = idUpdates.Value.Select(kv => kv.FieldName).ToArray();
+                        var targetRecord = plugin.XrmService.Retrieve(targetType, id, idUpdates.Value.Select(kv => kv.FieldName));
+                        //update the fields
+                        foreach (var fieldUpdate in idUpdates.Value)
                         {
-                            plugin.Trace("Updating " + item.Key + " " + field.Key + " " + value.Key + " " + value.Value + (value.Value == null ? "(null)" : (" (" + value.Value.GetType().Name + ")")));
+                            if (AllowsDifferenceChange(fieldUpdate.Rollup.RollupType))
+                            {
+                                targetRecord.SetField(fieldUpdate.FieldName, XrmEntity.SumFields(new[] { fieldUpdate.DifferenceValue, targetRecord.GetField(fieldUpdate.FieldName) }));
+                            }
+                            else
+                            {
+                                targetRecord.SetField(fieldUpdate.FieldName, GetRollup(fieldUpdate.Rollup, id));
+                            }
                         }
+                        plugin.XrmService.Update(targetRecord, fieldsForUpdating);
                     }
                 }
             }
-            //apply all required changes to parents we captured
-            //type -> ids -> fields . values
-            foreach (var item in dictionaryForDifferences)
+        }
+
+        public class UpdateMeta
+        {
+            public UpdateMeta(string field, LookupRollup rollup, object differenceValue)
             {
-                var targetType = item.Key;
-                foreach (var idUpdates in item.Value)
-                {
-                    var id = idUpdates.Key;
-                    //lock the parent record then retreive it
-                    plugin.XrmService.SetField(targetType, id, "modifiedon", DateTime.UtcNow);
-                    var fieldsForUpdating = idUpdates.Value.Select(kv => kv.Key).ToArray();
-                    var targetRecord = plugin.XrmService.Retrieve(targetType, id, idUpdates.Value.Select(kv => kv.Key));
-                    //update the fields
-                    foreach (var fieldUpdate in idUpdates.Value)
-                    {
-                        targetRecord.SetField(fieldUpdate.Key, XrmEntity.SumFields(new[] { fieldUpdate.Value, targetRecord.GetField(fieldUpdate.Key) }));
-                    }
-                    plugin.XrmService.Update(targetRecord, fieldsForUpdating);
-                }
+                FieldName = field;
+                DifferenceValue = differenceValue;
+                Rollup = rollup;
             }
+            public string FieldName { get; set; }
+            public LookupRollup Rollup { get; set; }
+            public object DifferenceValue { get; set; }
         }
 
         public IEnumerable<LookupRollup> GetRollupsForRolledupType(string entityType)
@@ -597,6 +565,7 @@ namespace JosephM.Xrm.CalculatedFields.Plugins.Rollups
             }
             throw new NotImplementedException("The GetDifferenceToApply Method Is Not Implemented For The Type " + oldValue == null ? newValue.GetType().Name : oldValue.GetType().Name);
         }
+
         private static object GetNegative(object value)
         {
             if (value == null)
