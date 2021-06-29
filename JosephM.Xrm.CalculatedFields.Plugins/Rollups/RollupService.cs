@@ -358,6 +358,7 @@ namespace JosephM.Xrm.CalculatedFields.Plugins.Rollups
                     {
                         var query = GetRollupQueryForLookup(rollup, id);
                         query.AddOrder(rollup.OrderByField, rollup.OrderType);
+                        query.AddOrder("createdon", OrderType.Descending);
                         var record = XrmService.RetrieveFirst(query);
                         newValue = record.GetField(rollup.FieldRolledup);
                         if(newValue is Guid g && rollup.ObjectType == typeof(EntityReference))

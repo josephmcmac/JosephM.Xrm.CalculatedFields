@@ -377,6 +377,25 @@ namespace JosephM.Xrm.CalculatedFields.Plugins.Test
             Assert.AreEqual(50, target.GetInt(Fields.jmcg_testentity_.jmcg_firsttarget));
             Assert.AreEqual(source1.Id, target.GetLookupGuid(Fields.jmcg_testentity_.jmcg_firsttargettestentitytwo));
 
+            Thread.Sleep(1000);
+            //create one same date but created latest and verify populated
+            var source1Temp = CreateTestRecord(Entities.jmcg_testentitytwo, new Dictionary<string, object>
+            {
+                { Fields.jmcg_testentitytwo_.jmcg_name, "Testing Order" },
+                { Fields.jmcg_testentitytwo_.jmcg_testentityrollupreference, target.ToEntityReference() },
+                { Fields.jmcg_testentitytwo_.new_boolean, true },
+                { Fields.jmcg_testentitytwo_.new_date, LocalisationService.TodayUnspecifiedType },
+                { Fields.jmcg_testentitytwo_.jmcg_firstsource,  25 },
+            });
+            target = Refresh(target);
+            Assert.AreEqual(25, target.GetInt(Fields.jmcg_testentity_.jmcg_firsttarget));
+            Assert.AreEqual(source1Temp.Id, target.GetLookupGuid(Fields.jmcg_testentity_.jmcg_firsttargettestentitytwo));
+
+            Delete(source1Temp);
+            target = Refresh(target);
+            Assert.AreEqual(50, target.GetInt(Fields.jmcg_testentity_.jmcg_firsttarget));
+            Assert.AreEqual(source1.Id, target.GetLookupGuid(Fields.jmcg_testentity_.jmcg_firsttargettestentitytwo));
+
             //create one with earlier date and verify populated
             var source2 = CreateTestRecord(Entities.jmcg_testentitytwo, new Dictionary<string, object>
             {
