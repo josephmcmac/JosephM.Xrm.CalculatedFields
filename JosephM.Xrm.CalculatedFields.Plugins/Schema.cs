@@ -3705,6 +3705,7 @@ namespace Schema
 			public const string jmcg_lookupfield = "jmcg_lookupfield";
 			public const string jmcg_lookupfieldselectionfield = "jmcg_lookupfieldselectionfield";
 			public const string jmcg_name = "jmcg_name";
+			public const string jmcg_onlysetonlookupchange = "jmcg_onlysetonlookupchange";
 			public const string jmcg_orderrollupbyfield = "jmcg_orderrollupbyfield";
 			public const string jmcg_orderrollupbyfieldordertype = "jmcg_orderrollupbyfieldordertype";
 			public const string jmcg_orderrollupbyfieldselectionfield = "jmcg_orderrollupbyfieldselectionfield";

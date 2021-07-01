@@ -82,7 +82,7 @@ namespace JosephM.Xrm.CalculatedFields.Plugins.Test
             DeleteAllCalculatedFields();
 
             //create time taken field for work minutes
-            CreateTestRecord(Entities.jmcg_calculatedfield, new Dictionary<string, object>
+            var calculatedName = CreateTestRecord(Entities.jmcg_calculatedfield, new Dictionary<string, object>
                 {
                     { Fields.jmcg_calculatedfield_.jmcg_type, new OptionSetValue(OptionSets.CalculatedField.Type.Lookup) },
                     { Fields.jmcg_calculatedfield_.jmcg_name, Fields.jmcg_testentity_.jmcg_string },
@@ -93,7 +93,7 @@ namespace JosephM.Xrm.CalculatedFields.Plugins.Test
                     { Fields.jmcg_calculatedfield_.jmcg_referencedtypetargetfield, Fields.account_.name }
                 });
 
-            CreateTestRecord(Entities.jmcg_calculatedfield, new Dictionary<string, object>
+            var calculatedNumberOfEmployees = CreateTestRecord(Entities.jmcg_calculatedfield, new Dictionary<string, object>
                 {
                     { Fields.jmcg_calculatedfield_.jmcg_type, new OptionSetValue(OptionSets.CalculatedField.Type.Lookup) },
                     { Fields.jmcg_calculatedfield_.jmcg_name, Fields.jmcg_testentity_.jmcg_integer },
@@ -103,6 +103,21 @@ namespace JosephM.Xrm.CalculatedFields.Plugins.Test
                     { Fields.jmcg_calculatedfield_.jmcg_referencedtype, Entities.account },
                     { Fields.jmcg_calculatedfield_.jmcg_referencedtypetargetfield, Fields.account_.numberofemployees }
                 });
+
+            var calculatedIdString = CreateTestRecord(Entities.jmcg_calculatedfield, new Dictionary<string, object>
+                {
+                    { Fields.jmcg_calculatedfield_.jmcg_type, new OptionSetValue(OptionSets.CalculatedField.Type.Lookup) },
+                    { Fields.jmcg_calculatedfield_.jmcg_name, Fields.jmcg_testentity_.jmcg_integer },
+                    { Fields.jmcg_calculatedfield_.jmcg_entitytype, Entities.jmcg_testentity },
+                    { Fields.jmcg_calculatedfield_.jmcg_field, Fields.jmcg_testentity_.jmcg_name },
+                    { Fields.jmcg_calculatedfield_.jmcg_lookupfield, Fields.jmcg_testentity_.jmcg_account },
+                    { Fields.jmcg_calculatedfield_.jmcg_referencedtype, Entities.account },
+                    { Fields.jmcg_calculatedfield_.jmcg_referencedtypetargetfield, Fields.account_.accountid },
+                    { Fields.jmcg_calculatedfield_.jmcg_onlysetonlookupchange, true }
+                });
+
+            var calculateFieldsEvents = CalculatedService.GetCalculateFieldsEvents();
+            Assert.AreEqual(3, calculateFieldsEvents.Count());
 
             var account = CreateTestRecord(Entities.account, new Dictionary<string, object>
             {
@@ -128,6 +143,7 @@ namespace JosephM.Xrm.CalculatedFields.Plugins.Test
                 { Fields.jmcg_testentity_.jmcg_account, account2.ToEntityReference() }
             });
 
+            Assert.AreEqual(account.GetField(Fields.account_.accountid).ToString(), testEntity.GetStringField(Fields.jmcg_testentity_.jmcg_name));
             Assert.AreEqual(account.GetStringField(Fields.account_.name), testEntity.GetStringField(Fields.jmcg_testentity_.jmcg_string));
             Assert.AreEqual(account.GetInt(Fields.account_.numberofemployees), testEntity.GetInt(Fields.jmcg_testentity_.jmcg_integer));
             Assert.AreEqual(account.GetStringField(Fields.account_.name), testEntity2.GetStringField(Fields.jmcg_testentity_.jmcg_string));
@@ -173,6 +189,50 @@ namespace JosephM.Xrm.CalculatedFields.Plugins.Test
             Assert.AreEqual(account.GetStringField(Fields.account_.name), testEntity.GetStringField(Fields.jmcg_testentity_.jmcg_string));
             Assert.AreEqual(account2.GetStringField(Fields.account_.name), testEntity2.GetStringField(Fields.jmcg_testentity_.jmcg_string));
             Assert.AreEqual(account2.GetStringField(Fields.account_.name), testEntity3.GetStringField(Fields.jmcg_testentity_.jmcg_string));
+
+            calculatedName.SetField(Fields.jmcg_calculatedfield_.jmcg_onlysetonlookupchange, true);
+            calculatedName = UpdateFieldsAndRetreive(calculatedName, Fields.jmcg_calculatedfield_.jmcg_onlysetonlookupchange);
+
+            calculateFieldsEvents = CalculatedService.GetCalculateFieldsEvents();
+            Assert.AreEqual(3, calculateFieldsEvents.Count());
+
+            calculatedNumberOfEmployees.SetField(Fields.jmcg_calculatedfield_.jmcg_onlysetonlookupchange, true);
+            calculatedNumberOfEmployees = UpdateFieldsAndRetreive(calculatedNumberOfEmployees, Fields.jmcg_calculatedfield_.jmcg_onlysetonlookupchange);
+
+            calculateFieldsEvents = CalculatedService.GetCalculateFieldsEvents();
+            Assert.AreEqual(2, calculateFieldsEvents.Count());
+
+            var namePriorToChange = account.GetStringField(Fields.account_.name);
+            var numberPriorToChange = account.GetInt(Fields.account_.numberofemployees);
+
+            account.SetField(Fields.account_.name, "Testing Target Changed");
+            account.SetField(Fields.account_.numberofemployees, 1111);
+            account = UpdateFieldsAndRetreive(account, Fields.account_.name, Fields.account_.numberofemployees);
+
+            testEntity = Refresh(testEntity);
+            testEntity2 = Refresh(testEntity2);
+            testEntity3 = Refresh(testEntity3);
+
+            Assert.AreEqual(namePriorToChange, testEntity.GetStringField(Fields.jmcg_testentity_.jmcg_string));
+            Assert.AreEqual(numberPriorToChange, testEntity.GetInt(Fields.jmcg_testentity_.jmcg_integer));
+            Assert.AreEqual(account2.GetStringField(Fields.account_.name), testEntity2.GetStringField(Fields.jmcg_testentity_.jmcg_string));
+            Assert.AreEqual(account2.GetInt(Fields.account_.numberofemployees), testEntity2.GetInt(Fields.jmcg_testentity_.jmcg_integer));
+            Assert.AreEqual(account2.GetStringField(Fields.account_.name), testEntity3.GetStringField(Fields.jmcg_testentity_.jmcg_string));
+            Assert.AreEqual(account2.GetInt(Fields.account_.numberofemployees), testEntity3.GetInt(Fields.jmcg_testentity_.jmcg_integer));
+
+            testEntity2.SetLookupField(Fields.jmcg_testentity_.jmcg_account, account);
+            testEntity2 = UpdateFieldsAndRetreive(testEntity2, Fields.jmcg_testentity_.jmcg_account);
+
+            testEntity = Refresh(testEntity);
+            testEntity2 = Refresh(testEntity2);
+            testEntity3 = Refresh(testEntity3);
+
+            Assert.AreEqual(namePriorToChange, testEntity.GetStringField(Fields.jmcg_testentity_.jmcg_string));
+            Assert.AreEqual(numberPriorToChange, testEntity.GetInt(Fields.jmcg_testentity_.jmcg_integer));
+            Assert.AreEqual(account.GetStringField(Fields.account_.name), testEntity2.GetStringField(Fields.jmcg_testentity_.jmcg_string));
+            Assert.AreEqual(account.GetInt(Fields.account_.numberofemployees), testEntity2.GetInt(Fields.jmcg_testentity_.jmcg_integer));
+            Assert.AreEqual(account2.GetStringField(Fields.account_.name), testEntity3.GetStringField(Fields.jmcg_testentity_.jmcg_string));
+            Assert.AreEqual(account2.GetInt(Fields.account_.numberofemployees), testEntity3.GetInt(Fields.jmcg_testentity_.jmcg_integer));
         }
 
         [TestMethod]

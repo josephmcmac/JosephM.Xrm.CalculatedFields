@@ -73,6 +73,12 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "1.0.2.3", "1.0.2.3", "{3A88
 		Releases\1.0.2.3\JosephMcGregorCalculatedFields_1_0_2_3_managed.zip = Releases\1.0.2.3\JosephMcGregorCalculatedFields_1_0_2_3_managed.zip
 	EndProjectSection
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "1.0.2.4", "1.0.2.4", "{DE671679-6D2F-4123-8764-390EE1C0558F}"
+	ProjectSection(SolutionItems) = preProject
+		Releases\1.0.2.4\JosephMcGregorCalculatedFields_1_0_2_4.zip = Releases\1.0.2.4\JosephMcGregorCalculatedFields_1_0_2_4.zip
+		Releases\1.0.2.4\JosephMcGregorCalculatedFields_1_0_2_4_managed.zip = Releases\1.0.2.4\JosephMcGregorCalculatedFields_1_0_2_4_managed.zip
+	EndProjectSection
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -108,6 +114,7 @@ Global
 		{373F295E-DA24-4EB1-8B95-2610B836728E} = {B84F85E6-52CD-414B-BC09-A6A9FBB73A29}
 		{E6796FE2-5289-4FEC-B8E6-E16DDE1FF9FA} = {B84F85E6-52CD-414B-BC09-A6A9FBB73A29}
 		{3A8806C1-D5A0-407D-999E-FCF1300F29B4} = {B84F85E6-52CD-414B-BC09-A6A9FBB73A29}
+		{DE671679-6D2F-4123-8764-390EE1C0558F} = {B84F85E6-52CD-414B-BC09-A6A9FBB73A29}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {08356E51-6AB3-4043-9FD5-A488B08CC822}

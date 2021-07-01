@@ -262,11 +262,9 @@ namespace JosephM.Xrm.CalculatedFields.Plugins.Services
 
             var sdkMessageProcessingSteps = GetCalculateFieldsEvents();
 
-            var removeIfNotUpdated = !isCurrentlyActive
-                ? sdkMessageProcessingSteps
+            var removeIfNotUpdated = sdkMessageProcessingSteps
                 .Where(sdk => sdk.GetStringField(Fields.sdkmessageprocessingstep_.configuration).Contains(changedEntityId.ToString()))
-                .ToList()
-                : new List<Entity>();
+                .ToList();
 
             //messages - entity type -> message -> stage
             var messages = new Dictionary<string, Dictionary<string, Dictionary<int, List<Entity>>>>();
@@ -312,14 +310,16 @@ namespace JosephM.Xrm.CalculatedFields.Plugins.Services
                 if (calculationType == OptionSets.CalculatedField.Type.Lookup)
                 {
                     var referencedType = calculatedField.GetStringField(Fields.jmcg_calculatedfield_.jmcg_referencedtype);
-                    if (referencedType != targetEntity)
+                    var onlySetOnLookupChange = calculatedField.GetBoolean(Fields.jmcg_calculatedfield_.jmcg_onlysetonlookupchange);
+                    if (referencedType != targetEntity
+                        && !onlySetOnLookupChange)
                     {
-                        addToDictionary(referencedType, PluginMessage.Update, PluginStage.PreOperationEvent, calculatedField);
+                        addToDictionary(referencedType, PluginMessage.Update, PluginStage.PostEvent, calculatedField);
                     }
                 }
             }
 
-            //only update those for this entity
+            //only update those for which contain this entity id in the configuration
             foreach (var type in messages)
             {
                 foreach (var message in type.Value)
@@ -372,6 +372,7 @@ namespace JosephM.Xrm.CalculatedFields.Plugins.Services
                 }
             }
 
+            //remove any which had this entity id in the configuration but were not picked up as still valid and updated
             foreach (var remove in removeIfNotUpdated)
             {
                 XrmService.Delete(remove);
@@ -575,7 +576,12 @@ namespace JosephM.Xrm.CalculatedFields.Plugins.Services
                                     var sourceField = lookupCalculationConfig.CalculatedFieldEntity.GetStringField(Fields.jmcg_calculatedfield_.jmcg_referencedtypetargetfield);
                                     var targetField = lookupCalculationConfig.CalculatedFieldEntity.GetStringField(Fields.jmcg_calculatedfield_.jmcg_field);
                                     var oldValue = plugin.GetField(targetField);
-                                    var newValue = referencedEntity.GetField(sourceField);
+                                    var newValue = ConvertToFieldType(lookupCalculationConfig.CalculatedFieldEntity, referencedEntity.GetField(sourceField));
+                                    var isString = lookupCalculationConfig.CalculatedFieldEntity.GetOptionSetValue(Fields.jmcg_calculatedfield_.jmcg_fieldtype) == OptionSets.CalculatedField.FieldType.String;
+                                    if(isString)
+                                    {
+                                        newValue = newValue?.ToString();
+                                    }
                                     if (!XrmEntity.FieldsEqual(oldValue, newValue))
                                     {
                                         plugin.SetField(targetField, newValue);
@@ -604,13 +610,13 @@ namespace JosephM.Xrm.CalculatedFields.Plugins.Services
                                         var sourceField = lookupCalculationConfig.CalculatedFieldEntity.GetStringField(Fields.jmcg_calculatedfield_.jmcg_referencedtypetargetfield);
                                         var targetField = lookupCalculationConfig.CalculatedFieldEntity.GetStringField(Fields.jmcg_calculatedfield_.jmcg_field);
                                         var oldValue = referencingRecord.GetField(targetField);
-                                        var newValue = plugin.GetField(sourceField);
+                                        var newValue = ConvertToFieldType(lookupCalculationConfig.CalculatedFieldEntity, plugin.GetField(sourceField));
                                         if (!XrmEntity.FieldsEqual(oldValue, newValue))
                                         {
                                             updateEntity.SetField(targetField, newValue);
                                         }
                                     }
-                                    if(updateEntity.Attributes.Any())
+                                    if (updateEntity.Attributes.Any())
                                     {
                                         XrmService.Update(updateEntity);
                                     }
@@ -634,6 +640,17 @@ namespace JosephM.Xrm.CalculatedFields.Plugins.Services
                     }
                 }
             }
+        }
+
+        private static object ConvertToFieldType(Entity calculatedField, object newValue)
+        {
+            var isString = calculatedField.GetOptionSetValue(Fields.jmcg_calculatedfield_.jmcg_fieldtype) == OptionSets.CalculatedField.FieldType.String;
+            if (isString)
+            {
+                newValue = newValue?.ToString();
+            }
+
+            return newValue;
         }
 
         public object GetNewValue(CalculatedFieldsConfig calculatedConfig, Func<string, object> getField)
@@ -725,7 +742,7 @@ namespace JosephM.Xrm.CalculatedFields.Plugins.Services
                         var referencedEntity = lookupId.HasValue
                             ? XrmService.Retrieve(calculatedConfig.CalculatedFieldEntity.GetStringField(Fields.jmcg_calculatedfield_.jmcg_referencedtype), lookupId.Value, new[] { calculatedConfig.CalculatedFieldEntity.GetStringField(Fields.jmcg_calculatedfield_.jmcg_referencedtypetargetfield) })
                             : null;
-                        return referencedEntity.GetField(calculatedConfig.CalculatedFieldEntity.GetStringField(Fields.jmcg_calculatedfield_.jmcg_referencedtypetargetfield));
+                        return ConvertToFieldType(calculatedConfig.CalculatedFieldEntity, referencedEntity.GetField(calculatedConfig.CalculatedFieldEntity.GetStringField(Fields.jmcg_calculatedfield_.jmcg_referencedtypetargetfield)));
                     }
             }
             throw new NotImplementedException($"Not implemented for type {calculationType}");
