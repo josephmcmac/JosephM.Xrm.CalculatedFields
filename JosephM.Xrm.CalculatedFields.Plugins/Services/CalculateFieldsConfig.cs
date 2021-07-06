@@ -6,6 +6,7 @@ namespace JosephM.Xrm.CalculatedFields.Plugins.Services
     public class CalculatedFieldsConfig
     {
         public Entity CalculatedFieldEntity { get; set; }
-        public FilterExpression FilterExpression { get; set; }
+        public FilterExpression ApplyFilterExpression { get; set; }
+        public FilterExpression RollupFilterExpression { get; set; }
     }
 }

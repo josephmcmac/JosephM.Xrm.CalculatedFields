@@ -514,6 +514,14 @@ namespace JosephM.Xrm.CalculatedFields.Plugins.Services
 
         public void ApplyCalculations(XrmEntityPlugin plugin, IEnumerable<CalculatedFieldsConfig> calculatedConfigs)
         {
+            var rollupCalculations = ProcessRollupCalculations(plugin, calculatedConfigs);
+            var lookupCalculations = ProcessLookupCalculations(plugin, calculatedConfigs);
+            var remainingCalculations = calculatedConfigs.Except(rollupCalculations.Union(lookupCalculations)).ToArray();
+            ProcessOtherCalculations(plugin, remainingCalculations);
+        }
+
+        private CalculatedFieldsConfig[] ProcessRollupCalculations(XrmEntityPlugin plugin, IEnumerable<CalculatedFieldsConfig> calculatedConfigs)
+        {
             var rollupCalculations = calculatedConfigs
                 .Where(cf => cf.CalculatedFieldEntity.GetOptionSetValue(Fields.jmcg_calculatedfield_.jmcg_type) == OptionSets.CalculatedField.Type.Rollup)
                 .ToArray();
@@ -531,9 +539,15 @@ namespace JosephM.Xrm.CalculatedFields.Plugins.Services
                     rollupService.ExecuteRollupPlugin(plugin);
                 }
             }
+
+            return rollupCalculations;
+        }
+
+        private CalculatedFieldsConfig[] ProcessLookupCalculations(XrmEntityPlugin plugin, IEnumerable<CalculatedFieldsConfig> calculatedConfigs)
+        {
             var lookupCalculations = calculatedConfigs
-                .Where(cf => cf.CalculatedFieldEntity.GetOptionSetValue(Fields.jmcg_calculatedfield_.jmcg_type) == OptionSets.CalculatedField.Type.Lookup)
-                .ToArray();
+                            .Where(cf => cf.CalculatedFieldEntity.GetOptionSetValue(Fields.jmcg_calculatedfield_.jmcg_type) == OptionSets.CalculatedField.Type.Lookup)
+                            .ToArray();
 
             var lookupGroupDictionary = new Dictionary<string, Dictionary<string, Dictionary<string, List<CalculatedFieldsConfig>>>>();
             foreach (var lookupCalculation in lookupCalculations)
@@ -564,21 +578,25 @@ namespace JosephM.Xrm.CalculatedFields.Plugins.Services
                         var lookupCalculationConfigs = lookupGroupDictionary[entityTypeKey][lookupFieldKey][referencedTypeKey];
                         if (plugin.TargetType == entityTypeKey)
                         {
-                            if (plugin.FieldChanging(lookupFieldKey))
+                            var thisLookupToProcess = lookupCalculationConfigs
+                                .Where(cf => XrmEntity.MeetsFilter(plugin.GetField, cf.ApplyFilterExpression)
+                                && (plugin.MeetsFilterChanging(cf.ApplyFilterExpression) || plugin.FieldChanging(lookupFieldKey)))
+                                .ToArray();
+                            if (thisLookupToProcess.Any())
                             {
                                 var lookupId = plugin.GetLookupGuid(lookupFieldKey);
                                 var referencedEntity = lookupId.HasValue
-                                    ? XrmService.Retrieve(referencedTypeKey, lookupId.Value, lookupCalculationConfigs.Select(c => c.CalculatedFieldEntity.GetStringField(Fields.jmcg_calculatedfield_.jmcg_referencedtypetargetfield)))
+                                    ? XrmService.Retrieve(referencedTypeKey, lookupId.Value, thisLookupToProcess.Select(c => c.CalculatedFieldEntity.GetStringField(Fields.jmcg_calculatedfield_.jmcg_referencedtypetargetfield)))
                                     : null;
 
-                                foreach(var lookupCalculationConfig in lookupCalculationConfigs)
+                                foreach (var lookupCalculationConfig in thisLookupToProcess)
                                 {
                                     var sourceField = lookupCalculationConfig.CalculatedFieldEntity.GetStringField(Fields.jmcg_calculatedfield_.jmcg_referencedtypetargetfield);
                                     var targetField = lookupCalculationConfig.CalculatedFieldEntity.GetStringField(Fields.jmcg_calculatedfield_.jmcg_field);
                                     var oldValue = plugin.GetField(targetField);
                                     var newValue = ConvertToFieldType(lookupCalculationConfig.CalculatedFieldEntity, referencedEntity.GetField(sourceField));
                                     var isString = lookupCalculationConfig.CalculatedFieldEntity.GetOptionSetValue(Fields.jmcg_calculatedfield_.jmcg_fieldtype) == OptionSets.CalculatedField.FieldType.String;
-                                    if(isString)
+                                    if (isString)
                                     {
                                         newValue = newValue?.ToString();
                                     }
@@ -593,10 +611,25 @@ namespace JosephM.Xrm.CalculatedFields.Plugins.Services
                         {
                             if (plugin.FieldChanging(lookupCalculationConfigs.Select(c => c.CalculatedFieldEntity.GetStringField(Fields.jmcg_calculatedfield_.jmcg_referencedtypetargetfield))))
                             {
-                                var referencingRecords = XrmService.RetrieveAllAndConditions(entityTypeKey, new[]
+                                var filter = new FilterExpression();
+                                filter.AddCondition(new ConditionExpression(lookupFieldKey, ConditionOperator.Equal, plugin.TargetId));
+                                if(lookupCalculationConfigs.All(f => f.ApplyFilterExpression != null))
                                 {
-                                    new ConditionExpression(lookupFieldKey, ConditionOperator.Equal, plugin.TargetId)
-                                 }, lookupCalculationConfigs.Select(c => c.CalculatedFieldEntity.GetStringField(Fields.jmcg_calculatedfield_.jmcg_field)));
+                                    var applyFilters = filter.AddFilter(LogicalOperator.Or);
+                                    foreach (var lookupCalculationConfig in lookupCalculationConfigs)
+                                    {
+                                        applyFilters.AddFilter(lookupCalculationConfig.ApplyFilterExpression);
+                                    }
+                                }
+                                var fieldsToInclude = lookupCalculationConfigs.Select(c => c.CalculatedFieldEntity.GetStringField(Fields.jmcg_calculatedfield_.jmcg_field)).ToList();
+                                foreach (var filterFields in lookupCalculationConfigs.Select(c => XrmEntity.GetFieldsInFilter(c.ApplyFilterExpression)))
+                                {
+                                    fieldsToInclude.AddRange(filterFields);
+                                }
+                                var referencingRecordsQuery = new QueryExpression(entityTypeKey);
+                                referencingRecordsQuery.ColumnSet = new ColumnSet(fieldsToInclude.Distinct().ToArray());
+                                referencingRecordsQuery.Criteria = filter;
+                                var referencingRecords = XrmService.RetrieveAll(referencingRecordsQuery);
 
                                 foreach (var referencingRecord in referencingRecords)
                                 {
@@ -607,13 +640,16 @@ namespace JosephM.Xrm.CalculatedFields.Plugins.Services
 
                                     foreach (var lookupCalculationConfig in lookupCalculationConfigs)
                                     {
-                                        var sourceField = lookupCalculationConfig.CalculatedFieldEntity.GetStringField(Fields.jmcg_calculatedfield_.jmcg_referencedtypetargetfield);
-                                        var targetField = lookupCalculationConfig.CalculatedFieldEntity.GetStringField(Fields.jmcg_calculatedfield_.jmcg_field);
-                                        var oldValue = referencingRecord.GetField(targetField);
-                                        var newValue = ConvertToFieldType(lookupCalculationConfig.CalculatedFieldEntity, plugin.GetField(sourceField));
-                                        if (!XrmEntity.FieldsEqual(oldValue, newValue))
+                                        if (XrmEntity.MeetsFilter(referencingRecord.GetField, lookupCalculationConfig.ApplyFilterExpression))
                                         {
-                                            updateEntity.SetField(targetField, newValue);
+                                            var sourceField = lookupCalculationConfig.CalculatedFieldEntity.GetStringField(Fields.jmcg_calculatedfield_.jmcg_referencedtypetargetfield);
+                                            var targetField = lookupCalculationConfig.CalculatedFieldEntity.GetStringField(Fields.jmcg_calculatedfield_.jmcg_field);
+                                            var oldValue = referencingRecord.GetField(targetField);
+                                            var newValue = ConvertToFieldType(lookupCalculationConfig.CalculatedFieldEntity, plugin.GetField(sourceField));
+                                            if (!XrmEntity.FieldsEqual(oldValue, newValue))
+                                            {
+                                                updateEntity.SetField(targetField, newValue);
+                                            }
                                         }
                                     }
                                     if (updateEntity.Attributes.Any())
@@ -627,9 +663,16 @@ namespace JosephM.Xrm.CalculatedFields.Plugins.Services
                 }
             }
 
-            foreach (var calculatedConfig in calculatedConfigs.Except(rollupCalculations.Union(lookupCalculations)).ToArray())
+            return lookupCalculations;
+        }
+
+        private void ProcessOtherCalculations(XrmEntityPlugin plugin, IEnumerable<CalculatedFieldsConfig> remainingCalculations)
+        {
+            foreach (var calculatedConfig in remainingCalculations)
             {
-                if (IsDependencyChanging(calculatedConfig, plugin))
+                if (XrmEntity.MeetsFilter(plugin.GetField, calculatedConfig.ApplyFilterExpression)
+                    && (plugin.MeetsFilterChanging(calculatedConfig.ApplyFilterExpression)
+                        || IsDependencyChanging(calculatedConfig, plugin)))
                 {
                     var fieldCalculated = calculatedConfig.CalculatedFieldEntity.GetStringField(Fields.jmcg_calculatedfield_.jmcg_field);
                     var oldValue = plugin.GetField(fieldCalculated);
@@ -973,7 +1016,7 @@ namespace JosephM.Xrm.CalculatedFields.Plugins.Services
                 GetSeparatorString(e),
                 e.GetStringField(Fields.jmcg_calculatedfield_.jmcg_orderrollupbyfield),
                 OrderTypeOptionToSdkType(e.GetOptionSetValue(Fields.jmcg_calculatedfield_.jmcg_orderrollupbyfieldordertype)));
-            rollup.Filter = config.FilterExpression;
+            rollup.Filter = config.RollupFilterExpression;
             rollup.FilterXml = e.GetStringField(Fields.jmcg_calculatedfield_.jmcg_rollupfilter);
             return rollup;
         }
@@ -1026,26 +1069,33 @@ namespace JosephM.Xrm.CalculatedFields.Plugins.Services
         }
         public CalculatedFieldsConfig LoadCalculatedFieldConfig(Entity calculatedFieldEntity)
         {
-            var config = new CalculatedFieldsConfig
+            return new CalculatedFieldsConfig
             {
                 CalculatedFieldEntity = calculatedFieldEntity,
+                ApplyFilterExpression = GetFetchFilterAsFilterExpression(calculatedFieldEntity, Fields.jmcg_calculatedfield_.jmcg_applycalculationfilter, Fields.jmcg_calculatedfield_.jmcg_entitytype),
+                RollupFilterExpression = GetFetchFilterAsFilterExpression(calculatedFieldEntity, Fields.jmcg_calculatedfield_.jmcg_rollupfilter, Fields.jmcg_calculatedfield_.jmcg_entitytyperolledup)
             };
-            var filterXml = calculatedFieldEntity.GetStringField(Fields.jmcg_calculatedfield_.jmcg_rollupfilter);
-            var rollupEntityType = calculatedFieldEntity.GetStringField(Fields.jmcg_calculatedfield_.jmcg_entitytyperolledup);
+        }
 
-            if (!string.IsNullOrWhiteSpace(rollupEntityType)
-                && !string.IsNullOrWhiteSpace(filterXml))
+        private FilterExpression GetFetchFilterAsFilterExpression(Entity calculatedFieldEntity, string fetchFilterField, string fetchFilterTargetTypeField)
+        {
+            FilterExpression filterExpression = null;
+            var filterXml = calculatedFieldEntity.GetStringField(fetchFilterField);
+            var fetchTargetType = calculatedFieldEntity.GetStringField(fetchFilterTargetTypeField);
+            if (!string.IsNullOrWhiteSpace(filterXml)
+                && !string.IsNullOrWhiteSpace(fetchTargetType))
             {
 
-                var fetchXml = "<fetch distinct=\"true\" no-lock=\"false\" mapping=\"logical\"><entity name=\"" + rollupEntityType + "\">" + filterXml + "</entity></fetch>";
+                var fetchXml = "<fetch distinct=\"true\" no-lock=\"false\" mapping=\"logical\"><entity name=\"" + fetchTargetType + "\">" + filterXml + "</entity></fetch>";
                 var response = (Microsoft.Crm.Sdk.Messages.FetchXmlToQueryExpressionResponse)XrmService.Execute(new Microsoft.Crm.Sdk.Messages.FetchXmlToQueryExpressionRequest
                 {
                     FetchXml = fetchXml
                 });
 
-                config.FilterExpression = response.Query.Criteria;
+                filterExpression = response.Query.Criteria;
             }
-            return config;
+
+            return filterExpression;
         }
 
         private OrderType OrderTypeOptionToSdkType(int optionValue)

@@ -3636,6 +3636,7 @@ namespace Schema
 			public const string importsequencenumber = "importsequencenumber";
 			public const string jmcg_addtimetofield = "jmcg_addtimetofield";
 			public const string jmcg_addtimetofieldselectionfield = "jmcg_addtimetofieldselectionfield";
+			public const string jmcg_applycalculationfilter = "jmcg_applycalculationfilter";
 			public const string jmcg_calculatedfieldid = "jmcg_calculatedfieldid";
 			public const string jmcg_calendarid = "jmcg_calendarid";
 			public const string jmcg_concatenatefield1 = "jmcg_concatenatefield1";

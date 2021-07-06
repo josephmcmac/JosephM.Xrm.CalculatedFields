@@ -1,7 +1,4 @@
-﻿using Microsoft.Xrm.Sdk;
-using Microsoft.Xrm.Sdk.Workflow;
-using System.Activities;
-using JosephM.Xrm.CalculatedFields.Plugins.Xrm;
+﻿using JosephM.Xrm.CalculatedFields.Plugins.Xrm;
 
 namespace JosephM.Xrm.CalculatedFields.Plugins.Workflows
 {

@@ -121,6 +121,7 @@ CalculatedJs.RefreshVisibility = function () {
     calculatedPageUtility.SetFieldVisibility("jmcg_rolluptype", isRollup);
     calculatedPageUtility.SetFieldMandatory("jmcg_rolluptype", isRollup);
     calculatedPageUtility.SetSectionVisibility("secRollup", isRollup);
+    calculatedPageUtility.SetSectionVisibility("secApplyCalculationFilter", type != null && !isRollup);
     calculatedPageUtility.SetFieldMandatory("jmcg_entitytyperolledup", isRollup);
     calculatedPageUtility.SetFieldMandatory("jmcg_fieldreferencing", isRollup);
     calculatedPageUtility.SetFieldMandatory("jmcg_fieldrolledup", isRollup);

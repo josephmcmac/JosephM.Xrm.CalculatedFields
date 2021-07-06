@@ -70,6 +70,7 @@ namespace JosephM.Xrm.CalculatedFields.Plugins.Workflows
                 fieldsToLoad.Add(calculatedFieldFieldName);
                 fieldsToLoad.Add("createdon");
                 fieldsToLoad.AddRange(CalculatedService.GetDependencyFields(config, config.CalculatedFieldEntity.GetStringField(Fields.jmcg_calculatedfield_.jmcg_entitytype)));
+                fieldsToLoad.AddRange(XrmEntity.GetFieldsInFilter(config.ApplyFilterExpression));
 
                 while (true)
                 {
@@ -80,7 +81,7 @@ namespace JosephM.Xrm.CalculatedFields.Plugins.Workflows
                     else
                     {
                         var processSetQuery = new QueryExpression(calciulatedFieldEntityName);
-                        processSetQuery.ColumnSet = new ColumnSet(fieldsToLoad.ToArray());
+                        processSetQuery.ColumnSet = new ColumnSet(fieldsToLoad.Distinct().ToArray());
                         processSetQuery.AddOrder("createdon", OrderType.Ascending);
                         processSetQuery.Criteria.AddCondition(new ConditionExpression("createdon", ConditionOperator.GreaterEqual, createDateThreshold));
 
@@ -110,12 +111,15 @@ namespace JosephM.Xrm.CalculatedFields.Plugins.Workflows
                                     }
                                     else
                                     {
-                                        var oldValue = entity.GetField(calculatedFieldFieldName);
-                                        var newValue = CalculatedService.GetNewValue(config, entity.GetField);
-                                        if (!XrmEntity.FieldsEqual(oldValue, newValue))
+                                        if (XrmEntity.MeetsFilter(entity.GetField, config.ApplyFilterExpression))
                                         {
-                                            entity.SetField(calculatedFieldFieldName, newValue);
-                                            XrmService.Update(entity, calculatedFieldFieldName);
+                                            var oldValue = entity.GetField(calculatedFieldFieldName);
+                                            var newValue = CalculatedService.GetNewValue(config, entity.GetField);
+                                            if (!XrmEntity.FieldsEqual(oldValue, newValue))
+                                            {
+                                                entity.SetField(calculatedFieldFieldName, newValue);
+                                                XrmService.Update(entity, calculatedFieldFieldName);
+                                            }
                                         }
                                     }
                                     createDateThreshold = entity.GetDateTimeField("createdon") ?? throw new InvalidPluginExecutionException("Error empty createdon " + entity.Id);

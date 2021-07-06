@@ -655,5 +655,28 @@ namespace JosephM.Xrm.CalculatedFields.Plugins.Xrm
             parties.Add(partyEntity);
             SetField(entity, fieldName, parties.ToArray());
         }
+
+        public static IEnumerable<string> GetFieldsInFilter(FilterExpression filterExpression)
+        {
+            var results = new List<string>();
+            if (filterExpression != null)
+            {
+                if (filterExpression.Conditions != null)
+                {
+                    foreach (var condition in filterExpression.Conditions)
+                    {
+                        results.Add(condition.AttributeName);
+                    }
+                }
+                if (filterExpression.Filters != null)
+                {
+                    foreach (var filter in filterExpression.Filters)
+                    {
+                        results.AddRange(GetFieldsInFilter(filter));
+                    }
+                }
+            }
+            return results.Distinct().ToArray();
+        }
     }
 }
