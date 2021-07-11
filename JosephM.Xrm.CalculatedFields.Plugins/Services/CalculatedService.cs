@@ -822,6 +822,30 @@ namespace JosephM.Xrm.CalculatedFields.Plugins.Services
                         }
                         return daysTaken;
                     }
+                case OptionSets.CalculatedField.TimeTakenMeasure.Weeks:
+                    {
+                        var startDay = LocalisationService.ConvertToTargetTime(startTime);
+                        var endDay = LocalisationService.ConvertToTargetTime(endTime);
+                        var weeksTaken = 0;
+                        while (startDay.AddDays(7) <= endDay)
+                        {
+                            startDay = startDay.AddDays(7);
+                            weeksTaken++;
+                        }
+                        return weeksTaken;
+                    }
+                case OptionSets.CalculatedField.TimeTakenMeasure.Years:
+                    {
+                        var startDay = LocalisationService.ConvertToTargetTime(startTime);
+                        var endDay = LocalisationService.ConvertToTargetTime(endTime);
+                        var yearsTaken = 0;
+                        while (startDay.AddYears(1) <= endDay)
+                        {
+                            startDay = startDay.AddYears(1);
+                            yearsTaken++;
+                        }
+                        return yearsTaken;
+                    }
                 case OptionSets.CalculatedField.TimeTakenMeasure.WorkMinutes:
                 case OptionSets.CalculatedField.TimeTakenMeasure.WorkHours:
                 case OptionSets.CalculatedField.TimeTakenMeasure.WorkDays:

@@ -22449,6 +22449,8 @@ namespace Schema
 				public const int WorkMinutes = 3;
 				public const int WorkHours = 4;
 				public const int WorkDays = 5;
+				public const int Weeks = 6;
+				public const int Years = 7;
 			}
 			public static class TimeTakenStartFieldSelectionField
 			{

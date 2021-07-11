@@ -176,6 +176,32 @@ namespace JosephM.Xrm.CalculatedFields.Plugins.Test
 
             //span over easter and queens birthday
             Assert.AreEqual(61, CalculatedService.GetTimeTaken(dayBeforeEasterNoon.AddDays(-28), easterTuesdayNoon.AddDays(57), OptionSets.CalculatedField.TimeTakenMeasure.WorkDays, calendarId));
+
+            //weeks
+            Assert.AreEqual(0, CalculatedService.GetTimeTaken(LocalisationService.ConvertTargetToUtc(new DateTime(1980, 11, 15, 0, 0, 0, DateTimeKind.Unspecified)), LocalisationService.ConvertTargetToUtc(new DateTime(1980, 11, 15, 0, 0, 0, DateTimeKind.Unspecified)), OptionSets.CalculatedField.TimeTakenMeasure.Weeks, null));
+            Assert.AreEqual(0, CalculatedService.GetTimeTaken(LocalisationService.ConvertTargetToUtc(new DateTime(1980, 11, 15, 0, 0, 0, DateTimeKind.Unspecified)), LocalisationService.ConvertTargetToUtc(new DateTime(1980, 11, 21, 0, 0, 0, DateTimeKind.Unspecified)), OptionSets.CalculatedField.TimeTakenMeasure.Weeks, null));
+            Assert.AreEqual(1, CalculatedService.GetTimeTaken(LocalisationService.ConvertTargetToUtc(new DateTime(1980, 11, 15, 0, 0, 0, DateTimeKind.Unspecified)), LocalisationService.ConvertTargetToUtc(new DateTime(1980, 11, 22, 0, 0, 0, DateTimeKind.Unspecified)), OptionSets.CalculatedField.TimeTakenMeasure.Weeks, null));
+            Assert.AreEqual(1, CalculatedService.GetTimeTaken(LocalisationService.ConvertTargetToUtc(new DateTime(1980, 11, 15, 0, 0, 0, DateTimeKind.Unspecified)), LocalisationService.ConvertTargetToUtc(new DateTime(1980, 11, 29, 0, 0, 0, DateTimeKind.Unspecified).AddSeconds(-1)), OptionSets.CalculatedField.TimeTakenMeasure.Weeks, null));
+            Assert.AreEqual(2, CalculatedService.GetTimeTaken(LocalisationService.ConvertTargetToUtc(new DateTime(1980, 11, 15, 0, 0, 0, DateTimeKind.Unspecified)), LocalisationService.ConvertTargetToUtc(new DateTime(1980, 11, 29, 0, 0, 0, DateTimeKind.Unspecified)), OptionSets.CalculatedField.TimeTakenMeasure.Weeks, null));
+
+            Assert.AreEqual(0, CalculatedService.GetTimeTaken(new DateTime(1980, 11, 15, 0, 0, 0, DateTimeKind.Unspecified), new DateTime(1980, 11, 15, 0, 0, 0, DateTimeKind.Unspecified), OptionSets.CalculatedField.TimeTakenMeasure.Weeks, null));
+            Assert.AreEqual(0, CalculatedService.GetTimeTaken(new DateTime(1980, 11, 15, 0, 0, 0, DateTimeKind.Unspecified), new DateTime(1980, 11, 21, 0, 0, 0, DateTimeKind.Unspecified), OptionSets.CalculatedField.TimeTakenMeasure.Weeks, null));
+            Assert.AreEqual(1, CalculatedService.GetTimeTaken(new DateTime(1980, 11, 15, 0, 0, 0, DateTimeKind.Unspecified), new DateTime(1980, 11, 22, 0, 0, 0, DateTimeKind.Unspecified), OptionSets.CalculatedField.TimeTakenMeasure.Weeks, null));
+            Assert.AreEqual(1, CalculatedService.GetTimeTaken(new DateTime(1980, 11, 15, 0, 0, 0, DateTimeKind.Unspecified), new DateTime(1980, 11, 29, 0, 0, 0, DateTimeKind.Unspecified).AddSeconds(-1), OptionSets.CalculatedField.TimeTakenMeasure.Weeks, null));
+            Assert.AreEqual(2, CalculatedService.GetTimeTaken(new DateTime(1980, 11, 15, 0, 0, 0, DateTimeKind.Unspecified), new DateTime(1980, 11, 29, 0, 0, 0, DateTimeKind.Unspecified), OptionSets.CalculatedField.TimeTakenMeasure.Weeks, null));
+
+            //years
+            Assert.AreEqual(0, CalculatedService.GetTimeTaken(LocalisationService.ConvertTargetToUtc(new DateTime(1980, 11, 15, 0, 0, 0, DateTimeKind.Unspecified)), LocalisationService.ConvertTargetToUtc(new DateTime(1980, 11, 15, 0, 0, 0, DateTimeKind.Unspecified)), OptionSets.CalculatedField.TimeTakenMeasure.Years, null));
+            Assert.AreEqual(0, CalculatedService.GetTimeTaken(LocalisationService.ConvertTargetToUtc(new DateTime(1980, 11, 15, 0, 0, 0, DateTimeKind.Unspecified)), LocalisationService.ConvertTargetToUtc(new DateTime(1981, 11, 14, 0, 0, 0, DateTimeKind.Unspecified)), OptionSets.CalculatedField.TimeTakenMeasure.Years, null));
+            Assert.AreEqual(1, CalculatedService.GetTimeTaken(LocalisationService.ConvertTargetToUtc(new DateTime(1980, 11, 15, 0, 0, 0, DateTimeKind.Unspecified)), LocalisationService.ConvertTargetToUtc(new DateTime(1981, 11, 15, 0, 0, 0, DateTimeKind.Unspecified)), OptionSets.CalculatedField.TimeTakenMeasure.Years, null));
+            Assert.AreEqual(1, CalculatedService.GetTimeTaken(LocalisationService.ConvertTargetToUtc(new DateTime(1980, 11, 15, 0, 0, 0, DateTimeKind.Unspecified)), LocalisationService.ConvertTargetToUtc(new DateTime(1982, 11, 15, 0, 0, 0, DateTimeKind.Unspecified).AddSeconds(-1)), OptionSets.CalculatedField.TimeTakenMeasure.Years, null));
+            Assert.AreEqual(2, CalculatedService.GetTimeTaken(LocalisationService.ConvertTargetToUtc(new DateTime(1980, 11, 15, 0, 0, 0, DateTimeKind.Unspecified)), LocalisationService.ConvertTargetToUtc(new DateTime(1982, 11, 15, 0, 0, 0, DateTimeKind.Unspecified)), OptionSets.CalculatedField.TimeTakenMeasure.Years, null));
+
+            Assert.AreEqual(0, CalculatedService.GetTimeTaken(new DateTime(1980, 11, 15, 0, 0, 0, DateTimeKind.Unspecified), new DateTime(1980, 11, 15, 0, 0, 0, DateTimeKind.Unspecified), OptionSets.CalculatedField.TimeTakenMeasure.Weeks, null));
+            Assert.AreEqual(0, CalculatedService.GetTimeTaken(new DateTime(1980, 11, 15, 0, 0, 0, DateTimeKind.Unspecified), new DateTime(1980, 11, 21, 0, 0, 0, DateTimeKind.Unspecified), OptionSets.CalculatedField.TimeTakenMeasure.Weeks, null));
+            Assert.AreEqual(1, CalculatedService.GetTimeTaken(new DateTime(1980, 11, 15, 0, 0, 0, DateTimeKind.Unspecified), new DateTime(1980, 11, 22, 0, 0, 0, DateTimeKind.Unspecified), OptionSets.CalculatedField.TimeTakenMeasure.Weeks, null));
+            Assert.AreEqual(1, CalculatedService.GetTimeTaken(new DateTime(1980, 11, 15, 0, 0, 0, DateTimeKind.Unspecified), new DateTime(1980, 11, 29, 0, 0, 0, DateTimeKind.Unspecified).AddSeconds(-1), OptionSets.CalculatedField.TimeTakenMeasure.Weeks, null));
+            Assert.AreEqual(2, CalculatedService.GetTimeTaken(new DateTime(1980, 11, 15, 0, 0, 0, DateTimeKind.Unspecified), new DateTime(1980, 11, 29, 0, 0, 0, DateTimeKind.Unspecified), OptionSets.CalculatedField.TimeTakenMeasure.Weeks, null));
         }
 
         [TestMethod]
